@@ -7,6 +7,7 @@
 #define DASH_TYPES_H
 
 #include <cstdint>
+#include <cstddef>
 
 namespace dash {
 
