@@ -4,6 +4,7 @@
  */
 
 #include "DashGauge.h"
+#include "../core/DashDebug.h"
 #include <cstdio>
 
 namespace dash {
