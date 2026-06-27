@@ -13,6 +13,8 @@
 
 #if DASH_DEBUG
 
+#include <Arduino.h>
+
 #define DASH_LOG(fmt, ...)                                              \
     do {                                                                \
         Serial.printf("[DASH] " fmt "\n", ##__VA_ARGS__);               \
