@@ -44,8 +44,10 @@
 #include "network/DashWebSocket.h"
 #include "data/DashJsonEngine.h"
 
-// Re-export StatusLevel for convenience
+// Re-export enums for convenience
 using dash::StatusLevel;
+using dash::MapTheme;
+using dash::MarkerStyle;
 
 class ESP32Dashboard {
 public:
@@ -284,6 +286,9 @@ private:
 
     /** @brief Broadcast full update to all clients. */
     void broadcastFullUpdate();
+
+    /** @brief Broadcast full configuration to all clients. */
+    void broadcastConfig();
 
     /** @brief Clear dirty flags on all widgets. */
     void clearAllDirty();

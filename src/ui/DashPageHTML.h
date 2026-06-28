@@ -22,8 +22,10 @@ static const char DASH_HTML[] PROGMEM = R"rawliteral(
     <link rel="stylesheet" href="/style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          onerror="var l=document.createElement('link');l.rel='stylesheet';l.href='/leaflet.css';document.head.appendChild(l);" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+            onerror="var s=document.createElement('script');s.src='/leaflet.js';document.head.appendChild(s);"></script>
 </head>
 <body>
     <header id="dash-header">

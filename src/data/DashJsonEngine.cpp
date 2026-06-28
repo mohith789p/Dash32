@@ -7,6 +7,7 @@
 #include "../core/DashDebug.h"
 #include "../widgets/DashGauge.h"
 #include "../widgets/DashLED.h"
+#include "../widgets/DashMap.h"
 #include <cstdio>
 #include <cstring>
 
@@ -37,6 +38,9 @@ bool DashJsonEngine::appendWidget(const DashWidget* widget, char* buf,
                           ->serializeFull(buf + pos, remaining);
         } else if (widget->getType() == WidgetType::LED) {
             written = static_cast<const DashLED*>(widget)
+                          ->serializeFull(buf + pos, remaining);
+        } else if (widget->getType() == WidgetType::Map) {
+            written = static_cast<const DashMap*>(widget)
                           ->serializeFull(buf + pos, remaining);
         } else {
             written = widget->serializeFull(buf + pos, remaining);

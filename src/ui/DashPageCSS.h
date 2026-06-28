@@ -346,6 +346,11 @@ body {
     padding: 16px 20px 8px;
 }
 
+.map-wrap {
+    position: relative;
+    width: 100%;
+}
+
 .map-container {
     height: 280px;
     width: 100%;
@@ -366,9 +371,92 @@ body {
     z-index: 500;
 }
 
+.map-controls {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    z-index: 500;
+}
+
+.map-btn {
+    width: 30px;
+    height: 30px;
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    border-radius: var(--radius-sm);
+    background: rgba(10, 14, 26, 0.85);
+    backdrop-filter: blur(8px);
+    color: var(--text-secondary);
+    font-size: 1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition-fast);
+    line-height: 1;
+}
+
+.map-btn:hover {
+    background: rgba(99, 102, 241, 0.2);
+    border-color: var(--accent-primary);
+    color: var(--text-primary);
+}
+
+.map-btn.active {
+    background: rgba(99, 102, 241, 0.3);
+    border-color: var(--accent-primary);
+    color: var(--accent-secondary);
+}
+
+/* Marker icon reset */
+.dash-marker-icon {
+    background: none !important;
+    border: none !important;
+}
+
+.dash-marker {
+    transition: transform 0.5s ease;
+}
+
+/* Fullscreen map */
+.map-wrap:fullscreen,
+.map-wrap:-webkit-full-screen {
+    background: var(--bg-primary);
+}
+
+.map-wrap:fullscreen .map-container,
+.map-wrap:-webkit-full-screen .map-container {
+    height: 100vh;
+    border-radius: 0;
+}
+
 /* Leaflet theme overrides */
-.leaflet-tile-pane { filter: brightness(0.7) saturate(0.8) contrast(1.1); }
-.leaflet-control-attribution { display: none !important; }
+.leaflet-control-attribution {
+    font-size: 0.6rem !important;
+    background: rgba(10, 14, 26, 0.7) !important;
+    color: var(--text-muted) !important;
+}
+.leaflet-control-attribution a {
+    color: var(--text-secondary) !important;
+}
+.leaflet-control-layers {
+    background: rgba(10, 14, 26, 0.9) !important;
+    border: 1px solid rgba(99, 102, 241, 0.2) !important;
+    border-radius: var(--radius-sm) !important;
+    color: var(--text-secondary) !important;
+}
+.leaflet-control-layers label {
+    color: var(--text-secondary) !important;
+    font-size: 0.75rem;
+}
+.leaflet-control-scale-line {
+    background: rgba(10, 14, 26, 0.7) !important;
+    border-color: var(--text-muted) !important;
+    color: var(--text-secondary) !important;
+    font-size: 0.6rem !important;
+}
 
 /* ============================================================
    LED Widget

@@ -59,6 +59,12 @@ private:
     /** @brief Handler for GET /app.js — serves embedded JavaScript. */
     static void handleJS();
 
+    /** @brief Handler for GET /leaflet.js — local Leaflet fallback. */
+    static void handleLeafletJS();
+
+    /** @brief Handler for GET /leaflet.css — local Leaflet fallback. */
+    static void handleLeafletCSS();
+
     /** @brief Handler for 404. */
     static void handleNotFound();
 

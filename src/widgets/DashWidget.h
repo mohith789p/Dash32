@@ -64,6 +64,12 @@ public:
     /** @brief Force the widget to be marked dirty. */
     void markDirty() { _dirty = true; }
 
+    /** @brief Returns true if the widget configuration has changed since last send. */
+    virtual bool isConfigDirty() const { return false; }
+
+    /** @brief Clear the configuration-dirty flag. */
+    virtual void clearConfigDirty() {}
+
     // ----- Polymorphic interface -----
 
     /**

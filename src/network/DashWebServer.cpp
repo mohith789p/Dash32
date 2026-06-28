@@ -8,6 +8,7 @@
 #include "../ui/DashPageHTML.h"
 #include "../ui/DashPageCSS.h"
 #include "../ui/DashPageJS.h"
+#include "../ui/DashLeaflet.h"
 
 #include <WebServer.h>
 
@@ -76,6 +77,8 @@ void DashWebServer::setupRoutes() {
     _server->on("/", HTTP_GET, handleRoot);
     _server->on("/style.css", HTTP_GET, handleCSS);
     _server->on("/app.js", HTTP_GET, handleJS);
+    _server->on("/leaflet.js", HTTP_GET, handleLeafletJS);
+    _server->on("/leaflet.css", HTTP_GET, handleLeafletCSS);
     _server->onNotFound(handleNotFound);
 }
 
@@ -101,6 +104,18 @@ void DashWebServer::handleJS() {
 void DashWebServer::handleNotFound() {
     if (!_activeServer) return;
     _activeServer->send(404, "text/plain", "Not Found");
+}
+
+void DashWebServer::handleLeafletJS() {
+    if (!_activeServer) return;
+    _activeServer->send_P(200, "application/javascript",
+                          DASH_LEAFLET_JS, DASH_LEAFLET_JS_SIZE);
+}
+
+void DashWebServer::handleLeafletCSS() {
+    if (!_activeServer) return;
+    _activeServer->send_P(200, "text/css",
+                          DASH_LEAFLET_CSS, DASH_LEAFLET_CSS_SIZE);
 }
 
 } // namespace dash

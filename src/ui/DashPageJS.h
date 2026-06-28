@@ -7,7 +7,7 @@
  * - Receives config and delta/update messages
  * - Dynamically creates widget DOM elements
  * - Updates values with animations
- * - Manages Leaflet maps
+ * - Manages Leaflet maps with themes, markers, trails, controls
  * - Tracks update rate
  * - Auto-reconnects on disconnect
  */
@@ -22,33 +22,84 @@ static const char DASH_JS[] PROGMEM = R"rawliteral(
     'use strict';
 
     // ---- State ----
-    let ws = null;
-    let widgets = {};
-    let maps = {};
-    let markers = {};
-    let updateCount = 0;
-    let lastRateUpdate = Date.now();
-    let reconnectDelay = 1000;
-    const MAX_RECONNECT_DELAY = 15000;
+    var ws = null;
+    var widgets = {};
+    var maps = {};
+    var markers = {};
+    var tileLayers = {};
+    var trails = {};
+    var trailData = {};
+    var animState = {};
+    var updateCount = 0;
+    var lastRateUpdate = Date.now();
+    var reconnectDelay = 1000;
+    var MAX_RECONNECT_DELAY = 15000;
+
+    // ---- Tile themes [url, attribution, maxZoom] ----
+    var THEMES = {
+        'darkmatter': [
+            'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+            '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>',
+            19
+        ],
+        'positron': [
+            'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+            '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>',
+            19
+        ],
+        'voyager': [
+            'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+            '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>',
+            19
+        ],
+        'satellite': [
+            'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+            'Tiles &copy; Esri, Maxar, Earthstar, USDA, USGS, AeroGRID, IGN, GIS Community',
+            18
+        ],
+        'terrain': [
+            'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
+            '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://opentopomap.org">OpenTopoMap</a>',
+            17
+        ]
+    };
+    var THEME_NAMES = {
+        'darkmatter': 'Dark Matter',
+        'positron': 'Positron',
+        'voyager': 'Voyager',
+        'satellite': 'Satellite',
+        'terrain': 'Terrain'
+    };
+
+    // ---- SVG Markers ----
+    var MARKER_SVGS = {
+        'circle': null,
+        'pin': '<svg viewBox="0 0 24 36" width="100%" height="100%"><path d="M12 0C5.4 0 0 5.4 0 12c0 9 12 24 12 24s12-15 12-24C24 5.4 18.6 0 12 0z" fill="#{fill}"/><circle cx="12" cy="12" r="5" fill="#fff"/></svg>',
+        'car': '<svg viewBox="0 0 32 32" width="100%" height="100%"><path d="M6 22h20l2 4H4l2-4zm1-2l2-12h2l1 4h8l1-4h2l2 12H7zm9-14c-2 0-3-1-3-3s1-3 3-3 3 1 3 3-1 3-3 3z" fill="#{fill}"/></svg>',
+        'truck': '<svg viewBox="0 0 32 32" width="100%" height="100%"><path d="M4 24h24l2 4H2l2-4zm0-2l2-14h4V4h12v4h4l2 14H4zm8-14v4h8V8h-8z" fill="#{fill}"/></svg>',
+        'motorcycle': '<svg viewBox="0 0 32 32" width="100%" height="100%"><path d="M16 2c-3 0-5 2-5 5v4l-5 2v4l5-1v6l-3 2v2l3-1 5 2 5-2 3 1v-2l-3-2v-6l5 1v-4l-5-2V7c0-3-2-5-5-5z" fill="#{fill}"/></svg>',
+        'bicycle': '<svg viewBox="0 0 32 32" width="100%" height="100%"><path d="M16 4a4 4 0 100 8 4 4 0 000-8zm-6 10c-1 0-2 1-2 2l1 8h2l1-6h8l1 6h2l1-8c0-1-1-2-2-2h-12z" fill="#{fill}"/></svg>',
+        'drone': '<svg viewBox="0 0 32 32" width="100%" height="100%"><path d="M16 4l-4 8h-6l-2 4h6l-4 8h4l6-8h6l2-4h-6l4-8h-4z" fill="#{fill}"/></svg>',
+        'boat': '<svg viewBox="0 0 32 32" width="100%" height="100%"><path d="M4 20l12-16 12 16H4zm12-8l-6 6h12l-6-6zM2 22h28v4H2v-4z" fill="#{fill}"/></svg>',
+        'aircraft': '<svg viewBox="0 0 32 32" width="100%" height="100%"><path d="M16 2L6 12v10l4 2v-6h12v6l4-2V12L16 2zm-4 12a2 2 0 110-4 2 2 0 010 4zm8 0a2 2 0 110-4 2 2 0 010 4z" fill="#{fill}"/></svg>'
+    };
 
     // ---- DOM references ----
-    const grid = document.getElementById('widget-grid');
-    const connBadge = document.getElementById('connection-status');
-    const connText = connBadge.querySelector('.status-text');
-    const timeEl = document.getElementById('client-time');
-    const rateEl = document.getElementById('update-rate');
+    var grid = document.getElementById('widget-grid');
+    var connBadge = document.getElementById('connection-status');
+    var connText = connBadge.querySelector('.status-text');
+    var timeEl = document.getElementById('client-time');
+    var rateEl = document.getElementById('update-rate');
 
     // ---- Utility ----
     function escapeHtml(str) {
-        const div = document.createElement('div');
-        div.textContent = str;
-        return div.innerHTML;
+        var d = document.createElement('div');
+        d.textContent = str;
+        return d.innerHTML;
     }
 
     function formatValue(val) {
-        if (typeof val === 'number') {
-            return Number.isInteger(val) ? val.toString() : val.toFixed(2);
-        }
+        if (typeof val === 'number') return Number.isInteger(val) ? val.toString() : val.toFixed(2);
         if (typeof val === 'boolean') return val ? 'ON' : 'OFF';
         if (val === null || val === undefined) return '--';
         return String(val);
@@ -56,25 +107,100 @@ static const char DASH_JS[] PROGMEM = R"rawliteral(
 
     // ---- Clock ----
     function updateClock() {
-        const now = new Date();
-        timeEl.textContent = now.toLocaleTimeString('en-US', { hour12: false });
+        timeEl.textContent = new Date().toLocaleTimeString('en-US', { hour12: false });
     }
     setInterval(updateClock, 1000);
     updateClock();
 
     // ---- Update rate ----
     setInterval(function() {
-        const elapsed = (Date.now() - lastRateUpdate) / 1000;
-        const rate = elapsed > 0 ? (updateCount / elapsed).toFixed(1) : 0;
-        rateEl.textContent = rate + ' updates/s';
+        var elapsed = (Date.now() - lastRateUpdate) / 1000;
+        rateEl.textContent = (elapsed > 0 ? (updateCount / elapsed).toFixed(1) : 0) + ' updates/s';
         updateCount = 0;
         lastRateUpdate = Date.now();
     }, 2000);
 
+    // ---- Create Leaflet marker from config ----
+    function createMarker(w, lat, lon) {
+        var ms = w.marker || 'circle';
+        var scale = w.mScale || 1.0;
+        var offset = w.hdgOff || 0.0;
+        var heading = (w.hdg || 0.0) + offset;
+
+        if (ms === 'circle') {
+            return L.circleMarker([lat, lon], {
+                radius: 8 * scale, color: '#6366f1', fillColor: '#06b6d4',
+                fillOpacity: 0.8, weight: 2
+            });
+        }
+
+        var svgStr = (MARKER_SVGS[ms] || '').replace(/#{fill}/g, '#6366f1');
+        if (!svgStr) {
+            return L.circleMarker([lat, lon], {
+                radius: 8 * scale, color: '#6366f1', fillColor: '#06b6d4',
+                fillOpacity: 0.8, weight: 2
+            });
+        }
+
+        var baseSize = 28;
+        var scaledSize = baseSize * scale;
+        var halfSize = scaledSize / 2;
+
+        var icon = L.divIcon({
+            html: '<div class="dash-marker" style="width:100%;height:100%;display:inline-block;transform:rotate(' +
+                  heading + 'deg);transition:transform 0.5s ease">' + svgStr + '</div>',
+            className: 'dash-marker-icon',
+            iconSize: [scaledSize, scaledSize],
+            iconAnchor: [halfSize, halfSize]
+        });
+        return L.marker([lat, lon], { icon: icon });
+    }
+
+    function updateMarkerHeading(w) {
+        var ms = w.marker || 'circle';
+        if (ms === 'circle') return;
+        var el = document.querySelector('#widget-' + w.id + ' .dash-marker');
+        var offset = w.hdgOff || 0.0;
+        var heading = (w.hdg || 0.0) + offset;
+        if (el) el.style.transform = 'rotate(' + heading + 'deg)';
+    }
+
+    // ---- Create tile layer ----
+    function createTileLayer(themeKey) {
+        var t = THEMES[themeKey] || THEMES['darkmatter'];
+        return L.tileLayer(t[0], { maxZoom: t[2], attribution: t[1] });
+    }
+
+    // ---- Change theme without recreating the map ----
+    function changeMapTheme(id, newTheme) {
+        var map = maps[id];
+        if (!map) return;
+        var oldLayer = tileLayers[id];
+        if (oldLayer) map.removeLayer(oldLayer);
+
+        var newLayer = createTileLayer(newTheme);
+        newLayer.addTo(map);
+        tileLayers[id] = newLayer;
+    }
+
+    // ---- Update/recreate marker when style/scale/offset changes ----
+    function updateMarkerOnMap(w) {
+        var map = maps[w.id];
+        if (!map) return;
+        var oldMarker = markers[w.id];
+        if (oldMarker) map.removeLayer(oldMarker);
+
+        var lat = w.lat || 0;
+        var lon = w.lon || 0;
+        var marker = createMarker(w, lat, lon);
+        marker.addTo(map);
+        markers[w.id] = marker;
+    }
+
     // ---- Widget renderers ----
-    const renderers = {
+    var renderers = {
         card: function(w) {
-            const el = document.createElement('div');
+            var el = document.createElement('div');
             el.className = 'widget widget-card';
             el.id = 'widget-' + w.id;
             el.style.animationDelay = (w.id * 60) + 'ms';
@@ -92,7 +218,7 @@ static const char DASH_JS[] PROGMEM = R"rawliteral(
             var max = w.max !== undefined ? w.max : 100;
             var val = w.value !== undefined ? w.value : 0;
             var pct = Math.max(0, Math.min(1, (val - min) / (max - min || 1)));
-            var arcLen = 188.5; // π * 60 (radius)
+            var arcLen = 188.5;
             var offset = arcLen * (1 - pct);
 
             var el = document.createElement('div');
@@ -132,11 +258,32 @@ static const char DASH_JS[] PROGMEM = R"rawliteral(
             el.className = 'widget widget-map';
             el.id = 'widget-' + w.id;
             el.style.animationDelay = (w.id * 60) + 'ms';
+
+            var controls = '';
+            if (w.follow !== false) {
+                controls += '<button class="map-btn map-follow-btn active" id="follow-' + w.id +
+                    '" title="Follow mode">&#9673;</button>';
+            } else {
+                controls += '<button class="map-btn map-follow-btn" id="follow-' + w.id +
+                    '" title="Follow mode">&#9673;</button>';
+            }
+            if (w.trail) {
+                controls += '<button class="map-btn map-fit-btn" id="fit-' + w.id +
+                    '" title="Fit Route">&#x269E;</button>';
+            }
+            if (w.fullscreen) {
+                controls += '<button class="map-btn map-fs-btn" id="fs-' + w.id +
+                    '" title="Fullscreen">&#x26F6;</button>';
+            }
+
             el.innerHTML =
                 '<div class="widget-title">' + escapeHtml(w.title) + '</div>' +
-                '<div class="map-container" id="map-' + w.id + '"></div>' +
-                '<div class="map-coords" id="coords-' + w.id + '">' +
-                    (w.lat || 0).toFixed(6) + ', ' + (w.lon || 0).toFixed(6) +
+                '<div class="map-wrap">' +
+                    '<div class="map-container" id="map-' + w.id + '"></div>' +
+                    '<div class="map-controls">' + controls + '</div>' +
+                    '<div class="map-coords" id="coords-' + w.id + '">' +
+                        (w.lat || 0).toFixed(6) + ', ' + (w.lon || 0).toFixed(6) +
+                    '</div>' +
                 '</div>';
             return el;
         },
@@ -209,7 +356,6 @@ static const char DASH_JS[] PROGMEM = R"rawliteral(
             var pct = Math.max(0, Math.min(1, (val - min) / (max - min || 1)));
             var arcLen = 188.5;
             var offset = arcLen * (1 - pct);
-
             var arc = document.getElementById('gauge-arc-' + w.id);
             var text = document.getElementById('gauge-val-' + w.id);
             if (arc) arc.setAttribute('stroke-dashoffset', offset);
@@ -221,14 +367,46 @@ static const char DASH_JS[] PROGMEM = R"rawliteral(
             var lon = data.lon !== undefined ? data.lon : w.lon;
             w.lat = lat;
             w.lon = lon;
+            if (data.hdg !== undefined) w.hdg = data.hdg;
 
             var coordEl = document.getElementById('coords-' + w.id);
             if (coordEl) coordEl.textContent = lat.toFixed(6) + ', ' + lon.toFixed(6);
 
-            if (maps[w.id]) {
-                var latlng = L.latLng(lat, lon);
-                markers[w.id].setLatLng(latlng);
-                maps[w.id].panTo(latlng);
+            if (!maps[w.id]) return;
+            var latlng = L.latLng(lat, lon);
+
+            // Smooth animation
+            var st = animState[w.id];
+            if (st && st.frame) cancelAnimationFrame(st.frame);
+            var prev = markers[w.id].getLatLng();
+            var startTime = performance.now();
+            var dur = 500;
+            animState[w.id] = {};
+            (function animate() {
+                var t = Math.min(1, (performance.now() - startTime) / dur);
+                var ease = t < 0.5 ? 2*t*t : -1+(4-2*t)*t;
+                var cLat = prev.lat + (lat - prev.lat) * ease;
+                var cLon = prev.lng + (lon - prev.lng) * ease;
+                var pos = L.latLng(cLat, cLon);
+                markers[w.id].setLatLng(pos);
+                if (w._follow && maps[w.id]) maps[w.id].panTo(pos, {animate:false});
+                if (t < 1) {
+                    animState[w.id].frame = requestAnimationFrame(animate);
+                } else {
+                    markers[w.id].setLatLng(latlng);
+                    if (w._follow) maps[w.id].panTo(latlng);
+                }
+            })();
+
+            // Heading
+            if (data.hdg !== undefined) updateMarkerHeading(w);
+
+            // Trail
+            if (w.trail && trails[w.id]) {
+                var td = trailData[w.id];
+                td.push([lat, lon]);
+                while (td.length > (w.trailLen || 50)) td.shift();
+                trails[w.id].setLatLngs(td);
             }
         },
 
@@ -261,52 +439,195 @@ static const char DASH_JS[] PROGMEM = R"rawliteral(
 
     // ---- Initialize map after DOM insertion ----
     function initMap(w) {
-        setTimeout(function() {
-            var container = document.getElementById('map-' + w.id);
-            if (!container || maps[w.id]) return;
-            try {
-                var lat = w.lat || 0;
-                var lon = w.lon || 0;
-                var map = L.map(container, {
-                    center: [lat, lon],
-                    zoom: 15,
-                    zoomControl: false,
-                    attributionControl: false
-                });
-                L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-                    maxZoom: 19
-                }).addTo(map);
-                var marker = L.circleMarker([lat, lon], {
-                    radius: 8,
-                    color: '#6366f1',
-                    fillColor: '#06b6d4',
-                    fillOpacity: 0.8,
-                    weight: 2
-                }).addTo(map);
-                maps[w.id] = map;
-                markers[w.id] = marker;
-            } catch (e) {
-                console.error('Map init error:', e);
-            }
-        }, 300);
+        requestAnimationFrame(function() {
+            requestAnimationFrame(function() {
+                var container = document.getElementById('map-' + w.id);
+                if (!container || maps[w.id]) return;
+                try {
+                    var lat = w.lat || 0;
+                    var lon = w.lon || 0;
+                    var zoom = w.zoom || 15;
+                    var themeKey = w.theme || 'darkmatter';
+                    w._follow = w.follow !== false;
+
+                    var map = L.map(container, {
+                        center: [lat, lon],
+                        zoom: zoom,
+                        zoomControl: !!w.zoomCtrl,
+                        attributionControl: true
+                    });
+
+                    // Base tile layer
+                    var baseLayers = {};
+                    var activeLayer = createTileLayer(themeKey);
+                    activeLayer.addTo(map);
+                    tileLayers[w.id] = activeLayer;
+
+                    // Layer switcher
+                    if (w.layers) {
+                        for (var key in THEMES) {
+                            if (THEMES.hasOwnProperty(key)) {
+                                baseLayers[THEME_NAMES[key]] = createTileLayer(key);
+                            }
+                        }
+                        baseLayers[THEME_NAMES[themeKey]] = activeLayer;
+                        L.control.layers(baseLayers, null, {position:'topright'}).addTo(map);
+                        
+                        // Sync layers on manual user click
+                        map.on('baselayerchange', function(e) {
+                            for (var key in THEME_NAMES) {
+                                if (THEME_NAMES.hasOwnProperty(key) && THEME_NAMES[key] === e.name) {
+                                    w.theme = key;
+                                    tileLayers[w.id] = e.layer;
+                                    break;
+                                }
+                            }
+                        });
+                    }
+
+                    // Scale
+                    if (w.scale) L.control.scale({position:'bottomright'}).addTo(map);
+
+                    // Marker
+                    var marker = createMarker(w, lat, lon);
+                    marker.addTo(map);
+                    markers[w.id] = marker;
+                    maps[w.id] = map;
+
+                    // Trail
+                    if (w.trail) {
+                        trailData[w.id] = [[lat, lon]];
+                        trails[w.id] = L.polyline([[lat, lon]], {
+                            color: '#06b6d4', weight: 2, opacity: 0.7,
+                            dashArray: '6,4'
+                        }).addTo(map);
+                    }
+
+                    // Follow button
+                    var followBtn = document.getElementById('follow-' + w.id);
+                    if (followBtn) {
+                        followBtn.addEventListener('click', function() {
+                            w._follow = !w._follow;
+                            this.classList.toggle('active', w._follow);
+                            if (w._follow) map.panTo(markers[w.id].getLatLng());
+                        });
+                    }
+
+                    // Fit Route button
+                    var fitBtn = document.getElementById('fit-' + w.id);
+                    if (fitBtn && w.trail) {
+                        fitBtn.addEventListener('click', function() {
+                            var trail = trails[w.id];
+                            if (trail) {
+                                var bounds = trail.getBounds();
+                                if (bounds.isValid()) {
+                                    map.fitBounds(bounds, {padding: [20, 20]});
+                                }
+                            }
+                        });
+                    }
+
+                    // Fullscreen button
+                    var fsBtn = document.getElementById('fs-' + w.id);
+                    if (fsBtn) {
+                        fsBtn.addEventListener('click', function() {
+                            var wrap = container.parentElement;
+                            if (!document.fullscreenElement &&
+                                !document.webkitFullscreenElement &&
+                                !document.msFullscreenElement) {
+                                var req = wrap.requestFullscreen || wrap.webkitRequestFullscreen || wrap.msRequestFullscreen;
+                                if (req) req.call(wrap);
+                            } else {
+                                var exit = document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen;
+                                if (exit) exit.call(document);
+                            }
+                        });
+                        var onFSChange = function() {
+                            setTimeout(function() { map.invalidateSize(); }, 100);
+                        };
+                        document.addEventListener('fullscreenchange', onFSChange);
+                        document.addEventListener('webkitfullscreenchange', onFSChange);
+                        document.addEventListener('msfullscreenchange', onFSChange);
+                    }
+
+                    // Fix size on visibility
+                    setTimeout(function() { map.invalidateSize(); }, 100);
+
+                } catch (e) {
+                    console.error('Map init error:', e);
+                }
+            });
+        });
     }
 
     // ---- Process config message ----
     function handleConfig(msg) {
-        grid.innerHTML = '';
-        widgets = {};
-        maps = {};
-        markers = {};
+        // If widgets already exist, check if we are just updating config for existing ones
+        var isUpdate = Object.keys(widgets).length > 0;
 
         if (!msg.widgets || !Array.isArray(msg.widgets)) return;
 
+        if (!isUpdate) {
+            grid.innerHTML = '';
+            widgets = {};
+            maps = {};
+            markers = {};
+            tileLayers = {};
+            trails = {};
+            trailData = {};
+            animState = {};
+        }
+
         msg.widgets.forEach(function(w) {
-            widgets[w.id] = w;
-            var renderer = renderers[w.type];
-            if (renderer) {
-                var el = renderer(w);
-                grid.appendChild(el);
-                if (w.type === 'map') initMap(w);
+            if (isUpdate && widgets[w.id]) {
+                var old = widgets[w.id];
+                
+                // If it's a map widget, dynamically apply config changes
+                if (w.type === 'map' && maps[w.id]) {
+                    var map = maps[w.id];
+                    
+                    // Theme changed
+                    if (w.theme && w.theme !== old.theme) {
+                        changeMapTheme(w.id, w.theme);
+                    }
+                    
+                    // Marker style or marker scale or heading offset changed
+                    if (w.marker !== old.marker || w.mScale !== old.mScale || w.hdgOff !== old.hdgOff) {
+                        old.marker = w.marker;
+                        old.mScale = w.mScale;
+                        old.hdgOff = w.hdgOff;
+                        updateMarkerOnMap(old);
+                    }
+
+                    // Follow changed
+                    if (w.follow !== undefined && w.follow !== old.follow) {
+                        old.follow = w.follow;
+                        old._follow = w.follow !== false;
+                        var fBtn = document.getElementById('follow-' + w.id);
+                        if (fBtn) fBtn.classList.toggle('active', old._follow);
+                    }
+
+                    // Zoom changed
+                    if (w.zoom && w.zoom !== old.zoom) {
+                        old.zoom = w.zoom;
+                        map.setZoom(w.zoom);
+                    }
+                    
+                    // Update current properties
+                    Object.assign(old, w);
+                } else {
+                    Object.assign(old, w);
+                    var updater = updaters[old.type];
+                    if (updater) updater(old, w);
+                }
+            } else {
+                widgets[w.id] = w;
+                var renderer = renderers[w.type];
+                if (renderer) {
+                    var el = renderer(w);
+                    grid.appendChild(el);
+                    if (w.type === 'map') initMap(w);
+                }
             }
         });
     }
@@ -319,10 +640,7 @@ static const char DASH_JS[] PROGMEM = R"rawliteral(
         msg.widgets.forEach(function(data) {
             var w = widgets[data.id];
             if (!w) return;
-
-            // Merge data into widget state
             Object.assign(w, data);
-
             var updater = updaters[w.type];
             if (updater) updater(w, data);
         });

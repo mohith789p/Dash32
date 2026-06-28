@@ -183,6 +183,23 @@ void ESP32Dashboard::update() {
     // Skip updates if no clients are connected
     if (!_wsServer.hasClients()) return;
 
+    // Check for config changes
+    bool configChanged = false;
+    for (uint8_t i = 0; i < _widgetCount; ++i) {
+        if (_widgets[i] && _widgets[i]->isConfigDirty()) {
+            configChanged = true;
+            break;
+        }
+    }
+    if (configChanged) {
+        broadcastConfig();
+        for (uint8_t i = 0; i < _widgetCount; ++i) {
+            if (_widgets[i]) {
+                _widgets[i]->clearConfigDirty();
+            }
+        }
+    }
+
     uint32_t now = millis();
 
     // Periodic full sync
@@ -473,6 +490,17 @@ void ESP32Dashboard::broadcastFullUpdate() {
     if (!_jsonBuf) return;
 
     int len = _jsonEngine.serializeFullUpdate(
+        _widgets, _widgetCount, _jsonBuf, _jsonBufSize);
+
+    if (len > 0) {
+        _wsServer.broadcast(_jsonBuf, len);
+    }
+}
+
+void ESP32Dashboard::broadcastConfig() {
+    if (!_jsonBuf) return;
+
+    int len = _jsonEngine.serializeConfig(
         _widgets, _widgetCount, _jsonBuf, _jsonBufSize);
 
     if (len > 0) {

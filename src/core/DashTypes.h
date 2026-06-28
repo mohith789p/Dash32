@@ -79,6 +79,42 @@ enum class StatusLevel : uint8_t {
 };
 
 // ---------------------------------------------------------------------------
+// Map theme enumeration
+// ---------------------------------------------------------------------------
+
+/**
+ * @enum MapTheme
+ * @brief Built-in map tile themes for the map widget.
+ */
+enum class MapTheme : uint8_t {
+    DarkMatter = 0,  ///< CartoDB Dark Matter (default)
+    Positron   = 1,  ///< CartoDB Positron (light)
+    Voyager    = 2,  ///< CartoDB Voyager
+    Satellite  = 3,  ///< Esri World Imagery
+    Terrain    = 4   ///< OpenTopoMap
+};
+
+// ---------------------------------------------------------------------------
+// Marker style enumeration
+// ---------------------------------------------------------------------------
+
+/**
+ * @enum MarkerStyle
+ * @brief Built-in marker styles for the map widget.
+ */
+enum class MarkerStyle : uint8_t {
+    Circle     = 0,  ///< Default circle marker (backward compatible)
+    Pin        = 1,  ///< Map pin marker
+    Car        = 2,  ///< Car / automobile
+    Truck      = 3,  ///< Truck / lorry
+    Motorcycle = 4,  ///< Motorcycle
+    Bicycle    = 5,  ///< Bicycle
+    Drone      = 6,  ///< Drone / quadcopter
+    Boat       = 7,  ///< Boat / ship
+    Aircraft   = 8   ///< Aircraft / airplane
+};
+
+// ---------------------------------------------------------------------------
 // Utility: safe string copy
 // ---------------------------------------------------------------------------
 
