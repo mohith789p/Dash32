@@ -89,7 +89,7 @@ static int writeJsonString(char* buf, size_t size, const char* str) {
 int DashWidget::serializeFull(char* buf, size_t size) const {
     if (!buf || size < 32) return -1;
 
-    // Build: {"id":N,"type":"xxx","title":"xxx","unit":"xxx","value":...}
+    // Build: {"id":N,"type":"xxx","title":"xxx","unit":"xxx"
     int pos = snprintf(buf, size,
                        "{\"id\":%u,\"type\":\"%s\",\"title\":",
                        _id, typeName());
@@ -109,11 +109,12 @@ int DashWidget::serializeFull(char* buf, size_t size) const {
     if (unitLen < 0) return -1;
     pos += unitLen;
 
-    // Comma before value
-    if (static_cast<size_t>(pos) + 1 >= size) return -1;
-    buf[pos++] = ',';
+    // Config (starts with leading comma if present)
+    int configLen = serializeConfig(buf + pos, size - pos);
+    if (configLen < 0) return -1;
+    pos += configLen;
 
-    // Value (delegated to subclass)
+    // Value (starts with leading comma)
     int valLen = serializeValue(buf + pos, size - pos);
     if (valLen < 0) return -1;
     pos += valLen;
@@ -133,7 +134,7 @@ int DashWidget::serializeFull(char* buf, size_t size) const {
 int DashWidget::serializeDelta(char* buf, size_t size) const {
     if (!buf || size < 16) return -1;
 
-    int pos = snprintf(buf, size, "{\"id\":%u,", _id);
+    int pos = snprintf(buf, size, "{\"id\":%u", _id);
     if (pos < 0 || static_cast<size_t>(pos) >= size) return -1;
 
     int valLen = serializeValue(buf + pos, size - pos);

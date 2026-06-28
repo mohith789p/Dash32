@@ -43,9 +43,6 @@ public:
     bool checkForChange() override;
     int  serializeValue(char* buf, size_t size) const override;
 
-    /** @brief Override to include color information. */
-    int serializeFull(char* buf, size_t size) const;
-
 private:
     bool*    _statePtr;
     bool     _state;

@@ -280,15 +280,7 @@ public:
 
     bool checkForChange() override;
     int  serializeValue(char* buf, size_t size) const override;
-
-    /**
-     * @brief Serialize full configuration (sent on client connect or
-     *        after a configuration change).
-     *
-     * Encodes all map settings (theme, zoom, marker, trail, controls)
-     * as JSON fields alongside the current coordinates.
-     */
-    int serializeFull(char* buf, size_t size) const;
+    int  serializeConfig(char* buf, size_t size) const override;
 
     // =================================================================
     // Internal dirty tracking

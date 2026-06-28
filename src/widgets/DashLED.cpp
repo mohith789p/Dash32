@@ -59,28 +59,9 @@ bool DashLED::checkForChange() {
 
 int DashLED::serializeValue(char* buf, size_t size) const {
     return snprintf(buf, size,
-        "\"value\":%s,\"colorOn\":\"#%06X\",\"colorOff\":\"#%06X\"",
+        ",\"value\":%s,\"colorOn\":\"#%06X\",\"colorOff\":\"#%06X\"",
         _state ? "true" : "false",
         _colorOn & 0xFFFFFF,
         _colorOff & 0xFFFFFF);
 }
-
-int DashLED::serializeFull(char* buf, size_t size) const {
-    if (!buf || size < 64) return -1;
-
-    int pos = snprintf(buf, size,
-        "{\"id\":%u,\"type\":\"led\",\"title\":\"%s\",",
-        _id, _title);
-    if (pos < 0 || static_cast<size_t>(pos) >= size) return -1;
-
-    int valLen = serializeValue(buf + pos, size - pos);
-    if (valLen < 0) return -1;
-    pos += valLen;
-
-    if (static_cast<size_t>(pos) + 2 >= size) return -1;
-    buf[pos++] = '}';
-    buf[pos] = '\0';
-    return pos;
-}
-
 } // namespace dash

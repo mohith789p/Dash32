@@ -94,6 +94,21 @@ public:
     virtual int serializeValue(char* buf, size_t size) const = 0;
 
     /**
+     * @brief Serialize widget-specific configuration as JSON fields.
+     *
+     * Example: `"min":0.00,"max":100.00`
+     *
+     * @param buf   Output buffer.
+     * @param size  Buffer capacity.
+     * @return Characters written, or -1 on error.
+     */
+    virtual int serializeConfig(char* buf, size_t size) const {
+        (void)buf;
+        (void)size;
+        return 0;
+    }
+
+    /**
      * @brief Serialize the full widget configuration as a JSON object.
      *
      * Includes id, type, title, unit, and current value.

@@ -48,7 +48,7 @@ bool DashStatus::checkForChange() {
 }
 
 int DashStatus::serializeValue(char* buf, size_t size) const {
-    return snprintf(buf, size, "\"label\":\"%s\",\"level\":\"%s\"",
+    return snprintf(buf, size, ",\"label\":\"%s\",\"level\":\"%s\"",
                     _label, levelName(_level));
 }
 

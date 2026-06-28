@@ -38,7 +38,7 @@ bool DashGauge::checkForChange() {
 }
 
 int DashGauge::serializeValue(char* buf, size_t size) const {
-    int prefix = snprintf(buf, size, "\"value\":");
+    int prefix = snprintf(buf, size, ",\"value\":");
     if (prefix < 0 || static_cast<size_t>(prefix) >= size) return -1;
 
     int valLen = _value.toJson(buf + prefix, size - prefix);
@@ -47,27 +47,8 @@ int DashGauge::serializeValue(char* buf, size_t size) const {
     return prefix + valLen;
 }
 
-int DashGauge::serializeFull(char* buf, size_t size) const {
-    // We need to inject min/max into the full serialization.
-    // Build the base, but we handle it manually to include range.
-    if (!buf || size < 64) return -1;
-
-    int pos = snprintf(buf, size,
-        "{\"id\":%u,\"type\":\"gauge\",\"title\":\"%s\",\"unit\":\"%s\","
-        "\"min\":%.2f,\"max\":%.2f,",
-        _id, _title, _unit, _rangeMin, _rangeMax);
-
-    if (pos < 0 || static_cast<size_t>(pos) >= size) return -1;
-
-    int valLen = serializeValue(buf + pos, size - pos);
-    if (valLen < 0) return -1;
-    pos += valLen;
-
-    if (static_cast<size_t>(pos) + 2 >= size) return -1;
-    buf[pos++] = '}';
-    buf[pos] = '\0';
-
-    return pos;
+int DashGauge::serializeConfig(char* buf, size_t size) const {
+    return snprintf(buf, size, ",\"min\":%.2f,\"max\":%.2f", _rangeMin, _rangeMax);
 }
 
 } // namespace dash

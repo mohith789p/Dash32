@@ -37,8 +37,8 @@ bool DashText::checkForChange() {
 
 int DashText::serializeValue(char* buf, size_t size) const {
     // We need to escape the text for JSON
-    // Simple approach: write "value":"escaped_text"
-    int pos = snprintf(buf, size, "\"value\":\"");
+    // Simple approach: write ,"value":"escaped_text"
+    int pos = snprintf(buf, size, ",\"value\":\"");
     if (pos < 0 || static_cast<size_t>(pos) >= size) return -1;
 
     // Escape text content

@@ -66,51 +66,37 @@ bool DashImage::checkForChange() {
 }
 
 int DashImage::serializeValue(char* buf, size_t size) const {
-    int prefix = snprintf(buf, size, "\"url\":\"");
-    if (prefix < 0 || static_cast<size_t>(prefix) >= size) return -1;
-
-    size_t pos = prefix;
-    for (size_t i = 0; _url[i] != '\0'; ++i) {
-        char c = _url[i];
-        if (c == '"' || c == '\\') {
-            if (pos + 2 >= size - 1) break;
-            buf[pos++] = '\\';
-            buf[pos++] = c;
-        } else if (static_cast<unsigned char>(c) >= 0x20) {
-            if (pos + 1 >= size - 1) break;
-            buf[pos++] = c;
-        }
-    }
-
-    if (pos + 1 >= size) return -1;
-    buf[pos++] = '"';
-    buf[pos] = '\0';
-
-    return static_cast<int>(pos);
+    (void)buf;
+    (void)size;
+    return 0;
 }
 
-int DashImage::serializeFull(char* buf, size_t size) const {
-    if (!buf || size < 64) return -1;
-
+int DashImage::serializeConfig(char* buf, size_t size) const {
     int pos = snprintf(buf, size,
-        "{\"id\":%u,\"type\":\"image\",\"title\":\"%s\",\"unit\":\"%s\","
-        "\"fit\":\"%s\",\"refresh\":%u,\"fullscreen\":%s,\"border\":%s,",
-        _id, _title, _unit,
+        ",\"fit\":\"%s\",\"refresh\":%u,\"fullscreen\":%s,\"border\":%s,\"url\":\"",
         fitToString(_fit), _refreshInterval,
         _fullscreen ? "true" : "false",
         _border ? "true" : "false");
-
     if (pos < 0 || static_cast<size_t>(pos) >= size) return -1;
 
-    int valLen = serializeValue(buf + pos, size - pos);
-    if (valLen < 0) return -1;
-    pos += valLen;
+    size_t urlPos = pos;
+    for (size_t i = 0; _url[i] != '\0'; ++i) {
+        char c = _url[i];
+        if (c == '"' || c == '\\') {
+            if (urlPos + 2 >= size - 1) break;
+            buf[urlPos++] = '\\';
+            buf[urlPos++] = c;
+        } else if (static_cast<unsigned char>(c) >= 0x20) {
+            if (urlPos + 1 >= size - 1) break;
+            buf[urlPos++] = c;
+        }
+    }
 
-    if (static_cast<size_t>(pos) + 2 >= size) return -1;
-    buf[pos++] = '}';
-    buf[pos] = '\0';
+    if (urlPos + 1 >= size) return -1;
+    buf[urlPos++] = '"';
+    buf[urlPos] = '\0';
 
-    return pos;
+    return static_cast<int>(urlPos);
 }
 
 } // namespace dash

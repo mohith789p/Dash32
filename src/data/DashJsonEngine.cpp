@@ -5,9 +5,6 @@
 
 #include "DashJsonEngine.h"
 #include "../core/DashDebug.h"
-#include "../widgets/DashGauge.h"
-#include "../widgets/DashLED.h"
-#include "../widgets/DashMap.h"
 #include <cstdio>
 #include <cstring>
 
@@ -32,19 +29,7 @@ bool DashJsonEngine::appendWidget(const DashWidget* widget, char* buf,
     size_t remaining = size - static_cast<size_t>(pos);
 
     if (full) {
-        // Special handling for widgets that override serializeFull
-        if (widget->getType() == WidgetType::Gauge) {
-            written = static_cast<const DashGauge*>(widget)
-                          ->serializeFull(buf + pos, remaining);
-        } else if (widget->getType() == WidgetType::LED) {
-            written = static_cast<const DashLED*>(widget)
-                          ->serializeFull(buf + pos, remaining);
-        } else if (widget->getType() == WidgetType::Map) {
-            written = static_cast<const DashMap*>(widget)
-                          ->serializeFull(buf + pos, remaining);
-        } else {
-            written = widget->serializeFull(buf + pos, remaining);
-        }
+        written = widget->serializeFull(buf + pos, remaining);
     } else {
         written = widget->serializeDelta(buf + pos, remaining);
     }

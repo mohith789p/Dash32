@@ -35,7 +35,7 @@ public:
     // ----- DashWidget interface -----
     bool checkForChange() override;
     int  serializeValue(char* buf, size_t size) const override;
-    int  serializeFull(char* buf, size_t size) const override;
+    int  serializeConfig(char* buf, size_t size) const override;
 
 private:
     char     _url[DASH_URL_MAX_LEN];

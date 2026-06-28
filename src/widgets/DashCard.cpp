@@ -23,8 +23,8 @@ bool DashCard::checkForChange() {
 }
 
 int DashCard::serializeValue(char* buf, size_t size) const {
-    // Output: "value":X
-    int prefix = snprintf(buf, size, "\"value\":");
+    // Output: ,"value":X
+    int prefix = snprintf(buf, size, ",\"value\":");
     if (prefix < 0 || static_cast<size_t>(prefix) >= size) return -1;
 
     int valLen = _value.toJson(buf + prefix, size - prefix);

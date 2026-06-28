@@ -56,11 +56,7 @@ public:
     // ----- DashWidget interface -----
     bool checkForChange() override;
     int  serializeValue(char* buf, size_t size) const override;
-
-    /**
-     * @brief Override full serialization to include min/max range.
-     */
-    int serializeFull(char* buf, size_t size) const;
+    int  serializeConfig(char* buf, size_t size) const override;
 
 private:
     ValueHolder _value;

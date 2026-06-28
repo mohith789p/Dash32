@@ -390,33 +390,26 @@ int DashMap::serializeValue(char* buf, size_t size) const {
     // regardless of the heading value (preserves heading == 0°).
     if (_hasHeading) {
         return snprintf(buf, size,
-            "\"lat\":%.6f,\"lon\":%.6f,\"hdg\":%.1f",
+            ",\"lat\":%.6f,\"lon\":%.6f,\"hdg\":%.1f",
             _lat, _lon, _heading);
     }
-    return snprintf(buf, size, "\"lat\":%.6f,\"lon\":%.6f", _lat, _lon);
+    return snprintf(buf, size, ",\"lat\":%.6f,\"lon\":%.6f", _lat, _lon);
 }
 
 // ---------------------------------------------------------------------------
 // Full serialization — config (sent on connect / config change)
 // ---------------------------------------------------------------------------
 
-int DashMap::serializeFull(char* buf, size_t size) const {
-    if (!buf || size < 128) return -1;
-
-    // Serialize theme and marker as human-readable strings.
-    // This makes the JSON self-documenting and decouples the browser
-    // from enum integer ordering.
-    int pos = snprintf(buf, size,
-        "{\"id\":%u,\"type\":\"map\",\"title\":\"%s\","
-        "\"theme\":\"%s\",\"zoom\":%u,"
+int DashMap::serializeConfig(char* buf, size_t size) const {
+    return snprintf(buf, size,
+        ",\"theme\":\"%s\",\"zoom\":%u,"
         "\"zoomCtrl\":%s,\"follow\":%s,"
         "\"marker\":\"%s\","
         "\"hdgOff\":%.1f,\"mScale\":%.2f,"
         "\"rotate\":%s,"
         "\"trail\":%s,\"trailLen\":%u,"
         "\"fullscreen\":%s,\"scale\":%s,"
-        "\"layers\":%s,",
-        _id, _title,
+        "\"layers\":%s",
         themeName(_theme),
         static_cast<unsigned>(_zoom),
         _zoomControls  ? "true" : "false",
@@ -430,20 +423,6 @@ int DashMap::serializeFull(char* buf, size_t size) const {
         _fullscreen    ? "true" : "false",
         _scale         ? "true" : "false",
         _layerSwitcher ? "true" : "false");
-
-    if (pos < 0 || static_cast<size_t>(pos) >= size) return -1;
-
-    // Runtime value (current coordinates + optional heading)
-    int valLen = serializeValue(buf + pos, size - pos);
-    if (valLen < 0) return -1;
-    pos += valLen;
-
-    // Close object
-    if (static_cast<size_t>(pos) + 2 >= size) return -1;
-    buf[pos++] = '}';
-    buf[pos]   = '\0';
-
-    return pos;
 }
 
 } // namespace dash
