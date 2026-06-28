@@ -228,6 +228,8 @@ The library uses a highly optimized composite structure:
   *Connects to WiFi network and launches the HTTP and WebSocket servers.*
 * **`bool begin(const char* ssid, const char* password, const char* hostname, uint16_t httpPort = 80, uint16_t wsPort = 81)`**
   *Connects to WiFi, sets up mDNS with the provided hostname, and launches servers.*
+* **`void setTitle(const char* title)`**
+  *Sets the display title of the dashboard (e.g., "Drone Monitor"). Updates the web UI and browser tab title automatically. Default is "Dash32 Monitor".*
 * **`void update()`**
   *Core execution loop. Must be called frequently inside `loop()`. Polling and client communications happen here.*
 

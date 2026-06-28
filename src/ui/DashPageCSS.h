@@ -539,6 +539,126 @@ body {
 }
 
 /* ============================================================
+   System Info Panel & Toggle Button
+   ============================================================ */
+.sys-info-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all var(--transition-base);
+}
+.sys-info-btn:hover {
+    background: rgba(99, 102, 241, 0.15);
+    border-color: rgba(99, 102, 241, 0.4);
+    color: var(--text-primary);
+}
+.sys-info-btn.active {
+    background: rgba(99, 102, 241, 0.25);
+    border-color: var(--accent-primary);
+    color: var(--text-primary);
+}
+.sys-info-panel {
+    background: rgba(10, 14, 26, 0.75);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(99, 102, 241, 0.1);
+    transition: all var(--transition-base);
+    z-index: 99;
+    position: sticky;
+    top: 61px;
+    max-height: 500px;
+    padding: 16px 24px;
+    opacity: 1;
+    overflow: hidden;
+}
+.sys-info-panel.collapsed {
+    max-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    opacity: 0;
+    border-bottom-color: transparent;
+}
+.sys-info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
+}
+.sys-info-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    border-radius: var(--radius-sm);
+    padding: 8px 12px;
+    font-size: 0.75rem;
+}
+.sys-info-label {
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+.sys-info-value {
+    color: var(--text-primary);
+    font-weight: 600;
+    font-family: monospace;
+}
+
+/* ============================================================
+   Empty State
+   ============================================================ */
+.empty-state {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 24px;
+    text-align: center;
+    background: var(--bg-card);
+    border: 1px dashed var(--border-card);
+    border-radius: var(--radius-lg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    max-width: 500px;
+    margin: 40px auto;
+    animation: widget-enter 0.5s ease-out;
+}
+.empty-state-icon {
+    margin-bottom: 16px;
+    color: var(--text-muted);
+}
+.empty-state h2 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--text-primary);
+}
+.empty-state p {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-bottom: 20px;
+    max-width: 360px;
+    line-height: 1.5;
+}
+.empty-state code {
+    font-family: monospace;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 6px 12px;
+    border-radius: var(--radius-sm);
+    font-size: 0.8rem;
+    color: var(--accent-secondary);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* ============================================================
    Footer
    ============================================================ */
 #dash-footer {
@@ -546,20 +666,36 @@ body {
     align-items: center;
     justify-content: space-between;
     padding: 12px 24px;
-    border-top: 1px solid rgba(99, 102, 241, 0.08);
+    background: rgba(10, 14, 26, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(99, 102, 241, 0.1);
+    position: sticky;
+    bottom: 0;
+    z-index: 100;
     font-size: 0.7rem;
     color: var(--text-muted);
 }
 
-#dash-footer strong {
-    background: var(--accent-gradient);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+#dash-footer a {
+    color: var(--accent-secondary);
+    text-decoration: none;
+    font-weight: 600;
+    transition: color var(--transition-fast);
+}
+
+#dash-footer a:hover {
+    color: var(--text-primary);
+    text-decoration: underline;
 }
 
 .footer-stat {
     font-variant-numeric: tabular-nums;
+}
+
+.footer-divider {
+    color: rgba(255, 255, 255, 0.1);
+    margin: 0 4px;
 }
 
 /* ============================================================
@@ -586,6 +722,10 @@ body {
 
     .header-time {
         display: none;
+    }
+
+    .sys-info-panel {
+        top: 53px;
     }
 }
 

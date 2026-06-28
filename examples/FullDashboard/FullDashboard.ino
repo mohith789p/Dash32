@@ -59,6 +59,7 @@ void setup() {
 
     // Initialize WiFi and start HTTP / WebSocket servers
     // mDNS is also configured, allowing access via http://dash32.local (or the IP)
+    dashboard.setTitle("Full Flagship Monitor");
     if (!dashboard.begin(ssid, password, "dash32")) {
         Serial.println("Dashboard failed to start!");
         while (true) { delay(1000); }

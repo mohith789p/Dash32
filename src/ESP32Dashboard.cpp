@@ -66,9 +66,15 @@ ESP32Dashboard::ESP32Dashboard()
     , _started(false)
     , _jsonBuf(nullptr)
     , _jsonBufSize(DASH_JSON_BUFFER_SIZE)
+    , _httpPort(DASH_HTTP_PORT)
+    , _wsPort(DASH_WS_PORT)
 {
     memset(_widgets, 0, sizeof(_widgets));
     memset(_ipStr, 0, sizeof(_ipStr));
+    strncpy(_title, "Dash32 Monitor", sizeof(_title));
+    _title[sizeof(_title) - 1] = '\0';
+    strncpy(_hostname, "dash32", sizeof(_hostname));
+    _hostname[sizeof(_hostname) - 1] = '\0';
     _instance = this;
 }
 
@@ -149,6 +155,11 @@ bool ESP32Dashboard::begin(const char* ssid, const char* password, const char* h
         strncpy(sanitized, "dash32", sizeof(sanitized));
         sanitized[sizeof(sanitized) - 1] = '\0';
     }
+    strncpy(_hostname, sanitized, sizeof(_hostname));
+    _hostname[sizeof(_hostname) - 1] = '\0';
+    _httpPort = httpPort;
+    _wsPort = wsPort;
+
     if (!MDNS.begin(sanitized)) {
         DASH_LOG_ERROR("Failed to start mDNS!");
     } else {
@@ -213,8 +224,14 @@ void ESP32Dashboard::update() {
     if (now - _lastDeltaMs >= DASH_UPDATE_INTERVAL_MS) {
         _lastDeltaMs = now;
 
+        static uint32_t lastSysUpdateMs = 0;
+        bool sysTimeElapsed = (now - lastSysUpdateMs >= 1000);
         uint8_t changedCount = checkAllChanges();
-        if (changedCount > 0) {
+
+        if (changedCount > 0 || sysTimeElapsed) {
+            if (sysTimeElapsed) {
+                lastSysUpdateMs = now;
+            }
             broadcastDelta();
             clearAllDirty();
         }
@@ -431,6 +448,32 @@ dash::DashStatus* ESP32Dashboard::addStatus(const char* title) {
 // Queries
 // ---------------------------------------------------------------------------
 
+void ESP32Dashboard::setTitle(const char* title) {
+    if (title) {
+        strncpy(_title, title, sizeof(_title));
+        _title[sizeof(_title) - 1] = '\0';
+        if (_started) {
+            broadcastConfig();
+        }
+    }
+}
+
+dash::DashboardSysInfo ESP32Dashboard::getSysInfo() const {
+    dash::DashboardSysInfo sys;
+    sys.title = _title;
+    sys.ip = _ipStr;
+    sys.hostname = _hostname;
+    sys.httpPort = _httpPort;
+    sys.wsPort = _wsPort;
+    sys.clients = _wsServer.getClientCount();
+    sys.rssi = WiFi.status() == WL_CONNECTED ? WiFi.RSSI() : 0;
+    sys.ssid = WiFi.status() == WL_CONNECTED ? WiFi.SSID().c_str() : "";
+    sys.model = ESP.getChipModel();
+    sys.heap = ESP.getFreeHeap();
+    sys.uptime = millis() / 1000;
+    return sys;
+}
+
 uint8_t ESP32Dashboard::getClientCount() const {
     return _wsServer.getClientCount();
 }
@@ -465,7 +508,7 @@ void ESP32Dashboard::sendConfigToClient(uint8_t clientId) {
     if (!_jsonBuf) return;
 
     int len = _jsonEngine.serializeConfig(
-        _widgets, _widgetCount, _jsonBuf, _jsonBufSize);
+        getSysInfo(), _widgets, _widgetCount, _jsonBuf, _jsonBufSize);
 
     if (len > 0) {
         _wsServer.sendToClient(clientId, _jsonBuf, len);
@@ -479,7 +522,7 @@ void ESP32Dashboard::broadcastDelta() {
     if (!_jsonBuf) return;
 
     int len = _jsonEngine.serializeDelta(
-        _widgets, _widgetCount, _jsonBuf, _jsonBufSize);
+        getSysInfo(), _widgets, _widgetCount, _jsonBuf, _jsonBufSize);
 
     if (len > 0) {
         _wsServer.broadcast(_jsonBuf, len);
@@ -490,7 +533,7 @@ void ESP32Dashboard::broadcastFullUpdate() {
     if (!_jsonBuf) return;
 
     int len = _jsonEngine.serializeFullUpdate(
-        _widgets, _widgetCount, _jsonBuf, _jsonBufSize);
+        getSysInfo(), _widgets, _widgetCount, _jsonBuf, _jsonBufSize);
 
     if (len > 0) {
         _wsServer.broadcast(_jsonBuf, len);
@@ -501,7 +544,7 @@ void ESP32Dashboard::broadcastConfig() {
     if (!_jsonBuf) return;
 
     int len = _jsonEngine.serializeConfig(
-        _widgets, _widgetCount, _jsonBuf, _jsonBufSize);
+        getSysInfo(), _widgets, _widgetCount, _jsonBuf, _jsonBufSize);
 
     if (len > 0) {
         _wsServer.broadcast(_jsonBuf, len);

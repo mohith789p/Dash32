@@ -42,9 +42,17 @@ static const char DASH_HTML[] PROGMEM = R"rawliteral(
                     </defs>
                 </svg>
             </div>
-            <h1>ESP32 Dashboard</h1>
+            <h1 id="dash-title">Dash32 Monitor</h1>
         </div>
         <div class="header-right">
+            <button id="sys-info-btn" class="sys-info-btn" title="Toggle System Info">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="16" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                </svg>
+                <span>System Info</span>
+            </button>
             <span id="connection-status" class="status-badge disconnected">
                 <span class="status-dot"></span>
                 <span class="status-text">Connecting...</span>
@@ -53,13 +61,37 @@ static const char DASH_HTML[] PROGMEM = R"rawliteral(
         </div>
     </header>
 
+    <div id="sys-info-panel" class="sys-info-panel collapsed">
+        <div class="sys-info-grid">
+            <div class="sys-info-item"><span class="sys-info-label">IP Address</span><span id="sys-ip" class="sys-info-value">-</span></div>
+            <div class="sys-info-item"><span class="sys-info-label">Hostname</span><span id="sys-hostname" class="sys-info-value">-</span></div>
+            <div class="sys-info-item"><span class="sys-info-label">HTTP Port</span><span id="sys-http" class="sys-info-value">-</span></div>
+            <div class="sys-info-item"><span class="sys-info-label">WebSocket Port</span><span id="sys-ws" class="sys-info-value">-</span></div>
+            <div class="sys-info-item"><span class="sys-info-label">SSID</span><span id="sys-ssid" class="sys-info-value">-</span></div>
+            <div class="sys-info-item"><span class="sys-info-label">RSSI</span><span id="sys-rssi" class="sys-info-value">-</span></div>
+            <div class="sys-info-item"><span class="sys-info-label">Chip Model</span><span id="sys-model" class="sys-info-value">-</span></div>
+            <div class="sys-info-item"><span class="sys-info-label">Free Heap</span><span id="sys-heap" class="sys-info-value">-</span></div>
+            <div class="sys-info-item"><span class="sys-info-label">Clients</span><span id="sys-clients" class="sys-info-value">-</span></div>
+            <div class="sys-info-item"><span class="sys-info-label">Uptime</span><span id="sys-uptime" class="sys-info-value">-</span></div>
+        </div>
+    </div>
+
     <main id="widget-grid" class="widget-grid">
         <!-- Widgets are dynamically injected here by app.js -->
     </main>
 
     <footer id="dash-footer">
-        <span>Powered by <strong>ESP32Dashboard</strong></span>
-        <span id="update-rate" class="footer-stat">0 updates/s</span>
+        <div class="footer-left">
+            Powered by <a href="https://github.com/mohith789p/Dash32" target="_blank" rel="noopener noreferrer">Dash32</a>
+        </div>
+        <div class="footer-center">
+            <span id="footer-model">-</span> | <span id="footer-version">v1.0.0</span>
+        </div>
+        <div class="footer-right">
+            <span id="update-rate" class="footer-stat">0.0 updates/s</span>
+            <span class="footer-divider">|</span>
+            <span id="last-sync" class="footer-stat">Last sync: -</span>
+        </div>
     </footer>
 
     <script src="/app.js"></script>

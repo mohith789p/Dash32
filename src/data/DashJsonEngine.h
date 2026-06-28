@@ -20,6 +20,20 @@
 
 namespace dash {
 
+struct DashboardSysInfo {
+    const char* title;
+    const char* ip;
+    const char* hostname;
+    uint16_t httpPort;
+    uint16_t wsPort;
+    uint8_t clients;
+    int rssi;
+    const char* ssid;
+    const char* model;
+    uint32_t heap;
+    uint32_t uptime;
+};
+
 class DashJsonEngine {
 public:
     DashJsonEngine() = default;
@@ -28,46 +42,53 @@ public:
      * @brief Serialize full configuration for all widgets.
      *
      * Output format:
-     * {"type":"config","widgets":[...full widget objects...]}
+     * {"type":"config","title":"Title","sys":{...},"widgets":[...full widget objects...]}
      *
+     * @param sys      System metadata and stats.
      * @param widgets  Array of widget pointers.
      * @param count    Number of widgets.
      * @param buf      Output buffer.
      * @param size     Buffer capacity.
      * @return Characters written, or -1 on error.
      */
-    int serializeConfig(DashWidget* const* widgets, uint8_t count,
+    int serializeConfig(const DashboardSysInfo& sys,
+                        DashWidget* const* widgets, uint8_t count,
                         char* buf, size_t size) const;
 
     /**
      * @brief Serialize only dirty (changed) widgets as a delta update.
      *
      * Output format:
-     * {"type":"delta","widgets":[...delta objects...]}
+     * {"type":"delta","sys":{...},"widgets":[...delta objects...]}
      *
-     * @param widgets  Array of widget pointers.
-     * @param count    Number of widgets.
-     * @param buf      Output buffer.
-     * @param size     Buffer capacity.
-     * @return Characters written, or -1 on error. Returns 0 if nothing dirty.
-     */
-    int serializeDelta(DashWidget* const* widgets, uint8_t count,
-                       char* buf, size_t size) const;
-
-    /**
-     * @brief Serialize all widget values (for periodic full resync).
-     *
-     * Output format:
-     * {"type":"update","widgets":[...delta-format objects for all...]}
-     *
+     * @param sys      System metadata and stats.
      * @param widgets  Array of widget pointers.
      * @param count    Number of widgets.
      * @param buf      Output buffer.
      * @param size     Buffer capacity.
      * @return Characters written, or -1 on error.
      */
-    int serializeFullUpdate(DashWidget* const* widgets, uint8_t count,
+    int serializeDelta(const DashboardSysInfo& sys,
+                       DashWidget* const* widgets, uint8_t count,
+                       char* buf, size_t size) const;
+
+    /**
+     * @brief Serialize all widget values (for periodic full resync).
+     *
+     * Output format:
+     * {"type":"update","sys":{...},"widgets":[...delta-format objects for all...]}
+     *
+     * @param sys      System metadata and stats.
+     * @param widgets  Array of widget pointers.
+     * @param count    Number of widgets.
+     * @param buf      Output buffer.
+     * @param size     Buffer capacity.
+     * @return Characters written, or -1 on error.
+     */
+    int serializeFullUpdate(const DashboardSysInfo& sys,
+                            DashWidget* const* widgets, uint8_t count,
                             char* buf, size_t size) const;
+
 
 private:
     /**

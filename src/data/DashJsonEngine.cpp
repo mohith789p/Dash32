@@ -62,14 +62,19 @@ bool DashJsonEngine::appendWidget(const DashWidget* widget, char* buf,
 }
 
 // ---------------------------------------------------------------------------
-// Config serialization (full state for new clients)
-// ---------------------------------------------------------------------------
-
-int DashJsonEngine::serializeConfig(DashWidget* const* widgets, uint8_t count,
+int DashJsonEngine::serializeConfig(const DashboardSysInfo& sys,
+                                    DashWidget* const* widgets, uint8_t count,
                                     char* buf, size_t size) const {
-    if (!buf || size < 32 || !widgets) return -1;
+    if (!buf || size < 128 || !widgets) return -1;
 
-    int pos = snprintf(buf, size, "{\"type\":\"config\",\"widgets\":[");
+    int pos = snprintf(buf, size,
+        "{\"type\":\"config\",\"title\":\"%s\",\"sys\":{"
+        "\"ip\":\"%s\",\"hostname\":\"%s\",\"http\":%u,\"ws\":%u,"
+        "\"clients\":%u,\"rssi\":%d,\"ssid\":\"%s\",\"model\":\"%s\","
+        "\"heap\":%u,\"uptime\":%u},\"widgets\":[",
+        sys.title, sys.ip, sys.hostname, sys.httpPort, sys.wsPort,
+        sys.clients, sys.rssi, sys.ssid, sys.model, sys.heap, sys.uptime);
+
     if (pos < 0 || static_cast<size_t>(pos) >= size) return -1;
 
     bool first = true;
@@ -93,21 +98,16 @@ int DashJsonEngine::serializeConfig(DashWidget* const* widgets, uint8_t count,
 // Delta serialization (only changed widgets)
 // ---------------------------------------------------------------------------
 
-int DashJsonEngine::serializeDelta(DashWidget* const* widgets, uint8_t count,
+int DashJsonEngine::serializeDelta(const DashboardSysInfo& sys,
+                                   DashWidget* const* widgets, uint8_t count,
                                    char* buf, size_t size) const {
-    if (!buf || size < 32 || !widgets) return -1;
+    if (!buf || size < 128 || !widgets) return -1;
 
-    // First check if there are any dirty widgets
-    bool anyDirty = false;
-    for (uint8_t i = 0; i < count; ++i) {
-        if (widgets[i] && widgets[i]->isDirty()) {
-            anyDirty = true;
-            break;
-        }
-    }
-    if (!anyDirty) return 0; // Nothing to send
+    int pos = snprintf(buf, size,
+        "{\"type\":\"delta\",\"sys\":{"
+        "\"clients\":%u,\"rssi\":%d,\"heap\":%u,\"uptime\":%u},\"widgets\":[",
+        sys.clients, sys.rssi, sys.heap, sys.uptime);
 
-    int pos = snprintf(buf, size, "{\"type\":\"delta\",\"widgets\":[");
     if (pos < 0 || static_cast<size_t>(pos) >= size) return -1;
 
     bool first = true;
@@ -130,12 +130,17 @@ int DashJsonEngine::serializeDelta(DashWidget* const* widgets, uint8_t count,
 // Full update serialization (periodic resync)
 // ---------------------------------------------------------------------------
 
-int DashJsonEngine::serializeFullUpdate(DashWidget* const* widgets,
+int DashJsonEngine::serializeFullUpdate(const DashboardSysInfo& sys,
+                                        DashWidget* const* widgets,
                                         uint8_t count,
                                         char* buf, size_t size) const {
-    if (!buf || size < 32 || !widgets) return -1;
+    if (!buf || size < 128 || !widgets) return -1;
 
-    int pos = snprintf(buf, size, "{\"type\":\"update\",\"widgets\":[");
+    int pos = snprintf(buf, size,
+        "{\"type\":\"update\",\"sys\":{"
+        "\"clients\":%u,\"rssi\":%d,\"heap\":%u,\"uptime\":%u},\"widgets\":[",
+        sys.clients, sys.rssi, sys.heap, sys.uptime);
+
     if (pos < 0 || static_cast<size_t>(pos) >= size) return -1;
 
     bool first = true;

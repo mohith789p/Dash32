@@ -93,6 +93,12 @@ public:
      */
     void update();
 
+    /**
+     * @brief Set the dashboard title displayed on the web interface.
+     * @param title The new dashboard title.
+     */
+    void setTitle(const char* title);
+
     // =================================================================
     // Card Widget
     // =================================================================
@@ -251,6 +257,10 @@ private:
     // State
     bool     _started;
     char     _ipStr[16]; ///< Cached IP address string
+    char     _title[64]; ///< Configurable dashboard title
+    char     _hostname[64]; ///< Sanitized hostname
+    uint16_t _httpPort;
+    uint16_t _wsPort;
 
     // JSON buffer (allocated once on heap at begin())
     char*    _jsonBuf;
@@ -292,6 +302,9 @@ private:
 
     /** @brief Clear dirty flags on all widgets. */
     void clearAllDirty();
+
+    /** @brief Get the current system metadata and stats. */
+    dash::DashboardSysInfo getSysInfo() const;
 
     /**
      * @brief Static callback for WebSocket connect events.

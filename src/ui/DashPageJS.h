@@ -91,6 +91,61 @@ static const char DASH_JS[] PROGMEM = R"rawliteral(
     var connText = connBadge.querySelector('.status-text');
     var timeEl = document.getElementById('client-time');
     var rateEl = document.getElementById('update-rate');
+    var sysBtn = document.getElementById('sys-info-btn');
+    var sysPanel = document.getElementById('sys-info-panel');
+
+    // ---- System Info Toggler ----
+    if (sysBtn && sysPanel) {
+        sysBtn.addEventListener('click', function() {
+            sysPanel.classList.toggle('collapsed');
+            sysBtn.classList.toggle('active', !sysPanel.classList.contains('collapsed'));
+        });
+    }
+
+    // ---- Formatting & Helpers ----
+    function formatUptime(seconds) {
+        if (!seconds) return '0s';
+        var d = Math.floor(seconds / (3600*24));
+        var h = Math.floor((seconds % (3600*24)) / 3600);
+        var m = Math.floor((seconds % 3600) / 60);
+        var s = Math.floor(seconds % 60);
+        var parts = [];
+        if (d > 0) parts.push(d + 'd');
+        if (h > 0) parts.push(h + 'h');
+        if (m > 0) parts.push(m + 'm');
+        if (s > 0 || parts.length === 0) parts.push(s + 's');
+        return parts.join(' ');
+    }
+
+    function formatHeap(bytes) {
+        if (!bytes) return '0 B';
+        if (bytes >= 1048576) return (bytes / 1048576).toFixed(2) + ' MB';
+        if (bytes >= 1024) return (bytes / 1024).toFixed(1) + ' KB';
+        return bytes + ' B';
+    }
+
+    function updateSysInfo(sys) {
+        if (!sys) return;
+        if (sys.ip !== undefined) document.getElementById('sys-ip').textContent = sys.ip;
+        if (sys.hostname !== undefined) document.getElementById('sys-hostname').textContent = sys.hostname ? sys.hostname + '.local' : '-';
+        if (sys.http !== undefined) document.getElementById('sys-http').textContent = sys.http;
+        if (sys.ws !== undefined) document.getElementById('sys-ws').textContent = sys.ws;
+        if (sys.ssid !== undefined) document.getElementById('sys-ssid').textContent = sys.ssid || '-';
+        if (sys.rssi !== undefined) document.getElementById('sys-rssi').textContent = sys.rssi ? sys.rssi + ' dBm' : '-';
+        if (sys.model !== undefined) {
+            document.getElementById('sys-model').textContent = sys.model;
+            document.getElementById('footer-model').textContent = sys.model;
+        }
+        if (sys.heap !== undefined) document.getElementById('sys-heap').textContent = formatHeap(sys.heap);
+        if (sys.clients !== undefined) document.getElementById('sys-clients').textContent = sys.clients;
+        if (sys.uptime !== undefined) document.getElementById('sys-uptime').textContent = formatUptime(sys.uptime);
+    }
+
+    function updateLastSync() {
+        var now = new Date();
+        var timeStr = now.toTimeString().split(' ')[0];
+        document.getElementById('last-sync').textContent = 'Last sync: ' + timeStr;
+    }
 
     // ---- Utility ----
     function escapeHtml(str) {
@@ -595,6 +650,15 @@ static const char DASH_JS[] PROGMEM = R"rawliteral(
 
     // ---- Process config message ----
     function handleConfig(msg) {
+        if (msg.title) {
+            document.getElementById('dash-title').textContent = msg.title;
+            document.title = msg.title;
+        }
+
+        if (msg.sys) {
+            updateSysInfo(msg.sys);
+        }
+
         // If widgets already exist, check if we are just updating config for existing ones
         var isUpdate = Object.keys(widgets).length > 0;
 
@@ -610,6 +674,24 @@ static const char DASH_JS[] PROGMEM = R"rawliteral(
             trails = {};
             trailData = {};
             animState = {};
+        }
+
+        if (msg.widgets.length === 0) {
+            grid.innerHTML = 
+                '<div class="empty-state">' +
+                    '<div class="empty-state-icon">' +
+                        '<svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">' +
+                            '<rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>' +
+                            '<line x1="9" y1="9" x2="15" y2="9"></line>' +
+                            '<line x1="9" y1="13" x2="15" y2="13"></line>' +
+                            '<line x1="9" y1="17" x2="13" y2="17"></line>' +
+                        '</svg>' +
+                    '</div>' +
+                    '<h2>No Widgets Configured</h2>' +
+                    '<p>Use the ESP32Dashboard API in your sketch to add widgets to the dashboard grid.</p>' +
+                    '<code>dashboard.addCard("Temperature", &temp);</code>' +
+                '</div>';
+            return;
         }
 
         msg.widgets.forEach(function(w) {
@@ -670,6 +752,9 @@ static const char DASH_JS[] PROGMEM = R"rawliteral(
 
     // ---- Process delta/update message ----
     function handleUpdate(msg) {
+        if (msg.sys) {
+            updateSysInfo(msg.sys);
+        }
         if (!msg.widgets || !Array.isArray(msg.widgets)) return;
         updateCount += msg.widgets.length;
 
@@ -714,6 +799,7 @@ static const char DASH_JS[] PROGMEM = R"rawliteral(
 
         ws.onmessage = function(event) {
             try {
+                updateLastSync();
                 var msg = JSON.parse(event.data);
                 switch (msg.type) {
                     case 'config':
