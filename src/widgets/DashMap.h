@@ -192,6 +192,37 @@ public:
      */
     void setHeading(float heading);
 
+    /**
+     * @brief Enable or disable visual marker rotation.
+     *
+     * When disabled, heading values continue to update internally
+     * and are transmitted in delta packets, but the browser does
+     * not apply a CSS rotation transform to the marker.
+     *
+     * Useful when a vehicle icon is desired without directional
+     * rotation (e.g. a parked car).
+     *
+     * @param enabled Default: true.
+     */
+    void enableRotation(bool enabled);
+
+    /**
+     * @brief Enable automatic bearing computation from GPS movement.
+     *
+     * When enabled and no heading pointer is bound (and setHeading()
+     * has not been called), the widget computes the compass bearing
+     * between consecutive coordinate updates and uses it as the
+     * heading.  Movement smaller than kBearingEpsilon is ignored to
+     * prevent jitter.
+     *
+     * If a heading pointer is bound or setHeading() is called,
+     * auto-bearing is overridden until the explicit heading source
+     * is removed.
+     *
+     * @param enabled Default: false.
+     */
+    void enableAutoBearing(bool enabled);
+
     // =================================================================
     // Trail / History
     // =================================================================
@@ -282,11 +313,25 @@ private:
     double  _lastLon;
     bool    _usePointers;
 
-    // ---- Heading state ----
+    // ---- Orientation state ----
+    //
+    // Currently only heading (yaw around the vertical axis) is exposed.
+    // The struct-like grouping keeps the door open for future pitch/roll
+    // fields without altering the public API or JSON protocol — new
+    // fields would simply be added alongside "hdg" in the JSON and
+    // ignored by older browser builds.
+    //
     float*  _headingPtr;
-    float   _heading;
-    float   _lastHeading; ///< NAN on first run
-    bool    _hasHeading;  ///< True when heading tracking is active
+    float   _heading;       ///< Current heading [0, 360)
+    float   _lastHeading;   ///< NAN on first run
+    bool    _hasHeading;    ///< True when heading tracking is active
+    bool    _rotationEnabled; ///< Browser applies CSS rotation (default: true)
+
+    // ---- Auto-bearing state ----
+    bool    _autoBearing;   ///< Compute heading from GPS movement
+    double  _prevBearLat;   ///< Previous coordinate for bearing calc
+    double  _prevBearLon;
+    bool    _prevBearValid; ///< False until first valid coord recorded
 
     // ---- Configuration ----
     MapTheme    _theme;
@@ -313,6 +358,9 @@ private:
     /** Minimum heading change that triggers a delta (degrees). */
     static constexpr float  kHeadingEpsilon = 1.0f;
 
+    /** Minimum movement (in coord degrees) for auto-bearing. */
+    static constexpr double kBearingEpsilon = 0.00005;
+
     // ---- Helpers ----
 
     /** Mark a configuration field as changed (triggers config resync). */
@@ -324,6 +372,14 @@ private:
      * Returns a value in (-180, 180].
      */
     static float headingDiff(float a, float b);
+
+    /**
+     * @brief Compute compass bearing from (lat1,lon1) to (lat2,lon2).
+     *
+     * Returns a value in [0, 360).  Uses the forward azimuth formula.
+     */
+    static float computeBearing(double lat1, double lon1,
+                                double lat2, double lon2);
 
     /** @brief Return the string name of a MapTheme for JSON. */
     static const char* themeName(MapTheme t);

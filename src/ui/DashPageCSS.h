@@ -417,7 +417,8 @@ body {
 }
 
 .dash-marker {
-    transition: transform 0.5s ease;
+    transform-origin: center center;
+    transition: transform 180ms cubic-bezier(.2,.8,.2,1);
 }
 
 /* Fullscreen map */

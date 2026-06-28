@@ -347,6 +347,118 @@ void setScale(bool enabled);          // Show distance scale
 void enableLayerSwitcher(bool enabled); // Enable map theme layers selector in browser
 ```
 
+### Heading / Marker Rotation
+
+The map widget supports **real-time marker rotation** to visually indicate the heading (front-facing direction) of a moving object such as a drone, car, aircraft, or boat. Rotation is performed entirely in the browser via CSS transforms — no marker recreation occurs when only the heading changes.
+
+#### Heading Values
+
+The heading represents **degrees clockwise from true north**:
+
+| Value | Direction |
+|------:|-----------|
+| `0°`  | North     |
+| `90°` | East      |
+| `180°`| South     |
+| `270°`| West      |
+
+Any input value is automatically normalized to the `[0, 360)` range (negative values and values ≥ 360 are handled correctly).
+
+#### Shortest-Path Rotation
+
+The browser always rotates the marker along the **shortest angular path**. A heading change from `359° → 1°` rotates **+2°** (not −358°), and `1° → 359°` rotates **−2°**. This prevents jarring full-circle spins when crossing north.
+
+#### API Reference
+
+* **`void bindHeading(float* heading)`**
+  Binds a pointer to a heading variable for automatic polling. The library reads the value each update cycle, normalizes it, and sends delta packets when the heading changes by more than 1°.
+
+* **`void setHeading(float heading)`**
+  Manually sets the heading value (switching to manual mode). Pointer updates are suspended until `bindHeading()` is called again.
+
+* **`void setHeadingOffset(float degrees)`**
+  Applies a rotation offset to compensate for SVG assets whose forward direction is not aligned with north. The final displayed rotation is:
+  ```
+  displayRotation = normalize(heading + headingOffset)
+  ```
+  For example, if your icon faces **east** by default, set `setHeadingOffset(-90.0f)`.
+
+* **`void enableRotation(bool enabled)`**
+  Enables or disables the visual rotation of the marker (default: `true`). When disabled, heading values continue to update internally and are transmitted in delta packets, but the marker remains visually fixed. Useful when a vehicle icon is desired without directional rotation (e.g. a parked car).
+
+* **`void enableAutoBearing(bool enabled)`**
+  Enables automatic heading computation from consecutive GPS coordinates (default: `false`). When enabled and no heading pointer is bound, the widget computes the compass bearing between the previous and current coordinates and uses it as the heading. Movements smaller than a minimum epsilon are ignored to prevent jitter. If a heading pointer is bound or `setHeading()` is called, the explicit heading takes priority.
+
+#### Supported Marker Types
+
+| Marker Style | Supports Rotation |
+|---|:---:|
+| `Car`, `Truck`, `Motorcycle`, `Bicycle` | ✅ |
+| `Drone`, `Aircraft`, `Boat` | ✅ |
+| `Circle`, `Pin` | ❌ (heading ignored) |
+
+#### Rotating Drone Marker Example
+
+```cpp
+#include <ESP32Dashboard.h>
+
+ESP32Dashboard dashboard;
+
+double lat = 37.7749, lon = -122.4194;
+float heading = 0.0f;
+
+void setup() {
+    Serial.begin(115200);
+    dashboard.begin("YourSSID", "YourPassword");
+
+    auto* map = dashboard.addMap(&lat, &lon, "Drone");
+    map->setMarker(MarkerStyle::Drone);
+    map->bindHeading(&heading);
+    map->setMarkerScale(1.5f);
+    map->setFollow(true);
+}
+
+void loop() {
+    heading += 2.0f;
+    if (heading >= 360.0f) heading = 0.0f;
+
+    dashboard.update();
+    delay(50);
+}
+```
+
+#### Auto-Bearing GPS Tracker Example
+
+```cpp
+#include <ESP32Dashboard.h>
+
+ESP32Dashboard dashboard;
+
+double lat = 37.7749, lon = -122.4194;
+
+void setup() {
+    Serial.begin(115200);
+    dashboard.begin("YourSSID", "YourPassword");
+
+    auto* map = dashboard.addMap(&lat, &lon, "Vehicle");
+    map->setMarker(MarkerStyle::Car);
+    map->enableAutoBearing(true);   // heading from GPS movement
+    map->enableTrail(true);
+    map->setFollow(true);
+}
+
+void loop() {
+    // Read GPS sensor...
+    // lat = gps.lat;
+    // lon = gps.lon;
+
+    dashboard.update();
+    delay(100);
+}
+```
+
+The marker rotates smoothly in the browser at ~180ms CSS transition with cubic-bezier easing — fast enough for real-time tracking without visual jitter.
+
 ### DashText
 ```cpp
 void setText(const char* text);   // Up to DASH_TEXT_MAX_LEN characters

@@ -26,6 +26,7 @@ static const char DASH_JS[] PROGMEM = R"rawliteral(
     var widgets = {};
     var maps = {};
     var markers = {};
+    var markerHdg = {};  // Per-widget cumulative display heading (unwrapped)
     var tileLayers = {};
     var trails = {};
     var trailData = {};
@@ -146,9 +147,16 @@ static const char DASH_JS[] PROGMEM = R"rawliteral(
         var scaledSize = baseSize * scale;
         var halfSize = scaledSize / 2;
 
+        // Determine if this marker type supports rotation
+        var noRotate = (ms === 'pin') || (w.rotate === false);
+        var rotation = noRotate ? 0 : heading;
+
+        // Initialize cumulative display heading for shortest-path tracking
+        markerHdg[w.id] = noRotate ? 0 : heading;
+
         var icon = L.divIcon({
             html: '<div class="dash-marker" style="width:100%;height:100%;display:inline-block;transform:rotate(' +
-                  heading + 'deg);transition:transform 0.5s ease">' + svgStr + '</div>',
+                  rotation + 'deg);transform-origin:center center">' + svgStr + '</div>',
             className: 'dash-marker-icon',
             iconSize: [scaledSize, scaledSize],
             iconAnchor: [halfSize, halfSize]
@@ -156,13 +164,38 @@ static const char DASH_JS[] PROGMEM = R"rawliteral(
         return L.marker([lat, lon], { icon: icon });
     }
 
+    // ---- Shortest-path heading interpolation ----
+    // Computes the shortest angular delta and applies it to the
+    // cumulative display heading so CSS transition never spins
+    // more than 180 degrees.
     function updateMarkerHeading(w) {
         var ms = w.marker || 'circle';
-        if (ms === 'circle') return;
+        if (ms === 'circle' || ms === 'pin') return;
+        if (w.rotate === false) return;
+
         var el = document.querySelector('#widget-' + w.id + ' .dash-marker');
+        if (!el) return;
+
         var offset = w.hdgOff || 0.0;
-        var heading = (w.hdg || 0.0) + offset;
-        if (el) el.style.transform = 'rotate(' + heading + 'deg)';
+        var targetHdg = (w.hdg || 0.0) + offset;
+
+        // Get previous cumulative display heading
+        var prev = markerHdg[w.id];
+        if (prev === undefined) {
+            prev = targetHdg;
+            markerHdg[w.id] = prev;
+        }
+
+        // Shortest angular delta
+        var delta = targetHdg - (prev % 360);
+        if (delta > 180) delta -= 360;
+        if (delta < -180) delta += 360;
+
+        // Accumulate into unwrapped heading
+        var displayHdg = prev + delta;
+        markerHdg[w.id] = displayHdg;
+
+        el.style.transform = 'rotate(' + displayHdg + 'deg)';
     }
 
     // ---- Create tile layer ----
@@ -572,6 +605,7 @@ static const char DASH_JS[] PROGMEM = R"rawliteral(
             widgets = {};
             maps = {};
             markers = {};
+            markerHdg = {};
             tileLayers = {};
             trails = {};
             trailData = {};
@@ -591,11 +625,13 @@ static const char DASH_JS[] PROGMEM = R"rawliteral(
                         changeMapTheme(w.id, w.theme);
                     }
                     
-                    // Marker style or marker scale or heading offset changed
-                    if (w.marker !== old.marker || w.mScale !== old.mScale || w.hdgOff !== old.hdgOff) {
+                    // Marker style or marker scale or heading offset or rotate changed
+                    if (w.marker !== old.marker || w.mScale !== old.mScale ||
+                        w.hdgOff !== old.hdgOff || w.rotate !== old.rotate) {
                         old.marker = w.marker;
                         old.mScale = w.mScale;
                         old.hdgOff = w.hdgOff;
+                        old.rotate = w.rotate;
                         updateMarkerOnMap(old);
                     }
 

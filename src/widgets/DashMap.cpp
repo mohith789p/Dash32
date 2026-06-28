@@ -53,6 +53,26 @@ float DashMap::headingDiff(float a, float b) {
     return d;
 }
 
+float DashMap::computeBearing(double lat1, double lon1,
+                              double lat2, double lon2) {
+    // Convert to radians
+    static constexpr double kDeg2Rad = 3.14159265358979323846 / 180.0;
+    static constexpr double kRad2Deg = 180.0 / 3.14159265358979323846;
+
+    double dLon = (lon2 - lon1) * kDeg2Rad;
+    double lat1r = lat1 * kDeg2Rad;
+    double lat2r = lat2 * kDeg2Rad;
+
+    double x = sin(dLon) * cos(lat2r);
+    double y = cos(lat1r) * sin(lat2r) -
+               sin(lat1r) * cos(lat2r) * cos(dLon);
+
+    double bearing = atan2(x, y) * kRad2Deg;
+    // Normalize to [0, 360)
+    bearing = fmod(bearing + 360.0, 360.0);
+    return static_cast<float>(bearing);
+}
+
 const char* DashMap::themeName(MapTheme t) {
     switch (t) {
         case MapTheme::DarkMatter: return "darkmatter";
@@ -60,7 +80,7 @@ const char* DashMap::themeName(MapTheme t) {
         case MapTheme::Voyager:    return "voyager";
         case MapTheme::Satellite:  return "satellite";
         case MapTheme::Terrain:    return "terrain";
-        default:                   return "darkmatter";
+        default:                   return "satellite";
     }
 }
 
@@ -96,6 +116,11 @@ DashMap::DashMap(const char* title, double* lat, double* lon)
     , _heading(0.0f)
     , _lastHeading(NAN) // NAN → force initial dirty on first update
     , _hasHeading(false)
+    , _rotationEnabled(true)
+    , _autoBearing(false)
+    , _prevBearLat(0.0)
+    , _prevBearLon(0.0)
+    , _prevBearValid(false)
     , _theme(MapTheme::DarkMatter)
     , _markerStyle(MarkerStyle::Circle)
     , _zoom(15)
@@ -228,8 +253,26 @@ void DashMap::setHeading(float heading) {
     // Manual heading; pointer updates suspended
     _headingPtr = nullptr;
     _hasHeading = true;
+    // Normalize to [0, 360)
+    heading = fmod(heading, 360.0f);
+    if (heading < 0.0f) heading += 360.0f;
     _heading    = heading;
     _dirty = true;
+}
+
+void DashMap::enableRotation(bool enabled) {
+    if (_rotationEnabled == enabled) return;
+    _rotationEnabled = enabled;
+    markConfigDirty();
+}
+
+void DashMap::enableAutoBearing(bool enabled) {
+    if (_autoBearing == enabled) return;
+    _autoBearing = enabled;
+    if (enabled) {
+        // Reset bearing state so next coord becomes the baseline
+        _prevBearValid = false;
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -283,7 +326,11 @@ bool DashMap::checkForChange() {
         _lon = *_lonPtr;
     }
     if (_hasHeading && _headingPtr) {
-        _heading = *_headingPtr;
+        float raw = *_headingPtr;
+        // Normalize to [0, 360)
+        raw = fmod(raw, 360.0f);
+        if (raw < 0.0f) raw += 360.0f;
+        _heading = raw;
     }
 
     // Detect coordinate change (treat NAN _lastLat as always-changed)
@@ -291,6 +338,29 @@ bool DashMap::checkForChange() {
                         std::isnan(_lastLon) ||
                         (fabs(_lat - _lastLat) > kCoordEpsilon) ||
                         (fabs(_lon - _lastLon) > kCoordEpsilon);
+
+    // Auto-bearing: compute heading from GPS movement when no
+    // explicit heading source is active.
+    if (_autoBearing && !_hasHeading && coordChanged) {
+        if (_prevBearValid) {
+            double dLat = _lat - _prevBearLat;
+            double dLon = _lon - _prevBearLon;
+            double dist = dLat * dLat + dLon * dLon;
+            // Only update bearing if movement exceeds epsilon
+            if (dist > kBearingEpsilon * kBearingEpsilon) {
+                _heading = computeBearing(_prevBearLat, _prevBearLon,
+                                          _lat, _lon);
+                _hasHeading = true;  // Activate heading for serialization
+                _prevBearLat = _lat;
+                _prevBearLon = _lon;
+            }
+        } else {
+            // First valid coord — record baseline, no bearing yet
+            _prevBearLat   = _lat;
+            _prevBearLon   = _lon;
+            _prevBearValid = true;
+        }
+    }
 
     // Detect heading change using shortest-angle comparison.
     // Also treat NAN _lastHeading (first run) as changed.
@@ -342,6 +412,7 @@ int DashMap::serializeFull(char* buf, size_t size) const {
         "\"zoomCtrl\":%s,\"follow\":%s,"
         "\"marker\":\"%s\","
         "\"hdgOff\":%.1f,\"mScale\":%.2f,"
+        "\"rotate\":%s,"
         "\"trail\":%s,\"trailLen\":%u,"
         "\"fullscreen\":%s,\"scale\":%s,"
         "\"layers\":%s,",
@@ -353,6 +424,7 @@ int DashMap::serializeFull(char* buf, size_t size) const {
         markerName(_markerStyle),
         _headingOffset,
         _markerScale,
+        _rotationEnabled ? "true" : "false",
         _trail         ? "true" : "false",
         static_cast<unsigned>(_trailLength),
         _fullscreen    ? "true" : "false",

@@ -17,11 +17,30 @@ setValue	KEYWORD2
 bindValue	KEYWORD2
 setRange	KEYWORD2
 setCoordinates	KEYWORD2
+bindCoordinates	KEYWORD2
 setState	KEYWORD2
 bindState	KEYWORD2
 setColors	KEYWORD2
 setText	KEYWORD2
 setStatus	KEYWORD2
+# Map methods
+setTheme	KEYWORD2
+setMarker	KEYWORD2
+setZoom	KEYWORD2
+setZoomControls	KEYWORD2
+setFollow	KEYWORD2
+setFullscreen	KEYWORD2
+setScale	KEYWORD2
+enableTrail	KEYWORD2
+setTrailLength	KEYWORD2
+enableLayerSwitcher	KEYWORD2
+setMarkerScale	KEYWORD2
+# Heading methods
+bindHeading	KEYWORD2
+setHeading	KEYWORD2
+setHeadingOffset	KEYWORD2
+enableRotation	KEYWORD2
+enableAutoBearing	KEYWORD2
 # Types
 DashCard	KEYWORD1
 DashGauge	KEYWORD1
@@ -30,6 +49,8 @@ DashLED	KEYWORD1
 DashText	KEYWORD1
 DashStatus	KEYWORD1
 StatusLevel	KEYWORD1
+MapTheme	KEYWORD1
+MarkerStyle	KEYWORD1
 # Constants
 DASH_MAX_WIDGETS	LITERAL1
 DASH_HTTP_PORT	LITERAL1
