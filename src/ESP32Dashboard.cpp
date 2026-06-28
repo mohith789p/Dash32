@@ -445,6 +445,28 @@ dash::DashStatus* ESP32Dashboard::addStatus(const char* title) {
 }
 
 // ---------------------------------------------------------------------------
+// Image widget factory
+// ---------------------------------------------------------------------------
+
+dash::DashImage* ESP32Dashboard::addImage(const char* title) {
+    auto* image = new (std::nothrow) dash::DashImage(title);
+    if (!image) { DASH_LOG_ERROR("addImage: allocation failed"); return nullptr; }
+    if (!registerWidget(image)) return nullptr;
+    return image;
+}
+
+// ---------------------------------------------------------------------------
+// Video widget factory
+// ---------------------------------------------------------------------------
+
+dash::DashVideo* ESP32Dashboard::addVideo(const char* title) {
+    auto* video = new (std::nothrow) dash::DashVideo(title);
+    if (!video) { DASH_LOG_ERROR("addVideo: allocation failed"); return nullptr; }
+    if (!registerWidget(video)) return nullptr;
+    return video;
+}
+
+// ---------------------------------------------------------------------------
 // Queries
 // ---------------------------------------------------------------------------
 

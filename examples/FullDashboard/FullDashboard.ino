@@ -49,6 +49,8 @@ dash::DashLED*    pMotorLed   = nullptr;
 dash::DashText*   pSystemLog  = nullptr;
 dash::DashStatus* pWifiStatus = nullptr;
 dash::DashStatus* pGpsStatus  = nullptr;
+dash::DashImage*  pImage      = nullptr;
+dash::DashVideo*  pVideo      = nullptr;
 
 void setup() {
     // Start serial communications for debugging
@@ -140,6 +142,22 @@ void setup() {
     pGpsStatus = dashboard.addStatus("GPS Receiver");
     if (pGpsStatus != nullptr) {
         pGpsStatus->setStatus("Searching...", StatusLevel::Warning);
+    }
+
+    // --- Media Widgets ---
+    pImage = dashboard.addImage("Static Camera View");
+    if (pImage != nullptr) {
+        pImage->setURL("https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=400&q=80");
+        pImage->setFit(ImageFit::Cover);
+    }
+
+    pVideo = dashboard.addVideo("Camera Live Stream");
+    if (pVideo != nullptr) {
+        pVideo->setURL("https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4");
+        pVideo->setAspectRatio(16, 9);
+        pVideo->setAutoplay(true);
+        pVideo->setMuted(true);
+        pVideo->showControls(true);
     }
 
     Serial.printf("Registered Widgets: %u / %u\n", 

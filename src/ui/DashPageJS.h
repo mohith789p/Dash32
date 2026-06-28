@@ -420,6 +420,247 @@ static const char DASH_JS[] PROGMEM = R"rawliteral(
                         escapeHtml(w.label || w.value || '') + '</div>' +
                 '</div>';
             return el;
+        },
+
+        image: function(w) {
+            var el = document.createElement('div');
+            el.className = 'widget widget-image';
+            if (w.border === false) el.classList.add('widget-no-border');
+            el.id = 'widget-' + w.id;
+            el.style.animationDelay = (w.id * 60) + 'ms';
+
+            var controls = '';
+            if (w.fullscreen) {
+                controls += '<button class="media-btn image-fs-btn" id="fs-' + w.id + '" title="Fullscreen">' +
+                    '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+                        '<path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>' +
+                    '</svg></button>';
+            }
+
+            el.innerHTML =
+                '<div class="widget-title">' + escapeHtml(w.title) + '</div>' +
+                '<div class="image-wrap" id="image-wrap-' + w.id + '">' +
+                    '<div class="image-container">' +
+                        '<img class="image-element image-fit-' + (w.fit || 'contain') + '" id="img-' + w.id + '" src="" alt="' + escapeHtml(w.title) + '"/>' +
+                        '<div class="media-overlay active" id="overlay-' + w.id + '">' +
+                            '<div class="spinner"></div>' +
+                            '<div class="overlay-title">Loading Image</div>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="media-controls">' + controls + '</div>' +
+                '</div>';
+
+            var img = el.querySelector('#img-' + w.id);
+            var overlay = el.querySelector('#overlay-' + w.id);
+
+            img.onload = function() {
+                overlay.classList.remove('active');
+            };
+
+            img.onerror = function() {
+                overlay.innerHTML =
+                    '<svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+                        '<rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>' +
+                        '<line x1="1" y1="1" x2="23" y2="23"></line>' +
+                        '<path d="M21 21H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h18a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2z"></path>' +
+                        '<circle cx="8.5" cy="8.5" r="1.5"></circle>' +
+                        '<polyline points="21 15 16 10 5 21"></polyline>' +
+                    '</svg>' +
+                    '<div class="overlay-title">Failed to Load Image</div>' +
+                    '<div class="overlay-desc">Verify URL and network connection</div>';
+                overlay.classList.add('active');
+            };
+
+            var url = w.url || '';
+            if (url) {
+                if (w.refresh > 0) {
+                    setInterval(function() {
+                        var bustUrl = url + (url.indexOf('?') >= 0 ? '&' : '?') + '_cb=' + Date.now();
+                        img.src = bustUrl;
+                    }, w.refresh);
+                }
+                img.src = url;
+            } else {
+                overlay.innerHTML =
+                    '<svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+                        '<circle cx="12" cy="12" r="10"></circle>' +
+                        '<line x1="12" y1="8" x2="12" y2="12"></line>' +
+                        '<line x1="12" y1="16" x2="12.01" y2="16"></line>' +
+                    '</svg>' +
+                    '<div class="overlay-title">No URL Configured</div>';
+                overlay.classList.add('active');
+            }
+
+            setTimeout(function() {
+                var wrap = el.querySelector('#image-wrap-' + w.id);
+                var fsBtn = el.querySelector('#fs-' + w.id);
+                if (fsBtn && wrap) {
+                    fsBtn.addEventListener('click', function() {
+                        if (!document.fullscreenElement) {
+                            wrap.requestFullscreen().catch(function(err) {
+                                console.error('Error enabling fullscreen:', err);
+                            });
+                        } else {
+                            document.exitFullscreen();
+                        }
+                    });
+                }
+            }, 0);
+
+            return el;
+        },
+
+        video: function(w) {
+            var el = document.createElement('div');
+            el.className = 'widget widget-video';
+            el.id = 'widget-' + w.id;
+            el.style.animationDelay = (w.id * 60) + 'ms';
+
+            var controls = '';
+            if (w.fullscreen) {
+                controls += '<button class="media-btn video-fs-btn" id="fs-' + w.id + '" title="Fullscreen">' +
+                    '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+                        '<path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>' +
+                    '</svg></button>';
+            }
+
+            el.innerHTML =
+                '<div class="widget-title">' + escapeHtml(w.title) + '</div>' +
+                '<div class="video-wrap" id="video-wrap-' + w.id + '">' +
+                    '<div class="video-container" id="video-container-' + w.id + '">' +
+                        '<div class="media-overlay active" id="overlay-' + w.id + '">' +
+                            '<div class="spinner"></div>' +
+                            '<div class="overlay-title">Connecting to Stream</div>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="media-controls">' + controls + '</div>' +
+                '</div>';
+
+            var container = el.querySelector('#video-container-' + w.id);
+            var overlay = el.querySelector('#overlay-' + w.id);
+            var reconnectInterval = w.reconnect || 3000;
+            var reconnectTimer = null;
+            var mediaElement = null;
+
+            function isMjpeg(url) {
+                if (!url) return false;
+                var low = url.toLowerCase();
+                return low.includes('stream') || low.includes('mjpg') || low.includes('mjpeg') || low.includes(':81') || low.includes('/video');
+            }
+
+            function clearReconnect() {
+                if (reconnectTimer) {
+                    clearTimeout(reconnectTimer);
+                    reconnectTimer = null;
+                }
+            }
+
+            function handleDisconnect() {
+                clearReconnect();
+                overlay.innerHTML =
+                    '<svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+                        '<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>' +
+                        '<line x1="12" y1="9" x2="12" y2="13"></line>' +
+                        '<line x1="12" y1="17" x2="12.01" y2="17"></line>' +
+                    '</svg>' +
+                    '<div class="overlay-title">Stream Disconnected</div>' +
+                    '<div class="overlay-desc">Reconnecting in ' + (reconnectInterval/1000) + 's...</div>';
+                overlay.classList.add('active');
+
+                reconnectTimer = setTimeout(function() {
+                    overlay.innerHTML =
+                        '<div class="spinner"></div>' +
+                        '<div class="overlay-title">Reconnecting...</div>';
+                    loadStream();
+                }, reconnectInterval);
+            }
+
+            function loadStream() {
+                var url = w.url || '';
+                if (!url) {
+                    overlay.innerHTML =
+                        '<svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+                            '<circle cx="12" cy="12" r="10"></circle>' +
+                            '<line x1="12" y1="8" x2="12" y2="12"></line>' +
+                            '<line x1="12" y1="16" x2="12.01" y2="16"></line>' +
+                        '</svg>' +
+                        '<div class="overlay-title">No stream URL configured</div>';
+                    overlay.classList.add('active');
+                    return;
+                }
+
+                if (mediaElement) {
+                    try {
+                        container.removeChild(mediaElement);
+                    } catch(e){}
+                }
+
+                if (isMjpeg(url)) {
+                    var img = document.createElement('img');
+                    img.className = 'video-element';
+                    img.alt = w.title;
+                    mediaElement = img;
+
+                    img.onload = function() {
+                        overlay.classList.remove('active');
+                        clearReconnect();
+                    };
+
+                    img.onerror = function() {
+                        handleDisconnect();
+                    };
+
+                    img.src = url + (url.indexOf('?') >= 0 ? '&' : '?') + '_cb=' + Date.now();
+                    container.insertBefore(img, overlay);
+                } else {
+                    var vid = document.createElement('video');
+                    vid.className = 'video-element';
+                    if (w.autoplay !== false) vid.autoplay = true;
+                    if (w.muted !== false) vid.muted = true;
+                    vid.playsInline = true;
+                    if (w.controls) vid.controls = true;
+                    mediaElement = vid;
+
+                    vid.onplaying = function() {
+                        overlay.classList.remove('active');
+                        clearReconnect();
+                    };
+
+                    vid.onstalled = vid.onerror = vid.onwaiting = function() {
+                        if (!reconnectTimer) {
+                            reconnectTimer = setTimeout(handleDisconnect, 1500);
+                        }
+                    };
+
+                    vid.src = url;
+                    container.insertBefore(vid, overlay);
+                }
+            }
+
+            loadStream();
+
+            w._reload = function() {
+                clearReconnect();
+                loadStream();
+            };
+
+            setTimeout(function() {
+                var wrap = el.querySelector('#video-wrap-' + w.id);
+                var fsBtn = el.querySelector('#fs-' + w.id);
+                if (fsBtn && wrap) {
+                    fsBtn.addEventListener('click', function() {
+                        if (!document.fullscreenElement) {
+                            wrap.requestFullscreen().catch(function(err) {
+                                console.error('Error enabling fullscreen:', err);
+                            });
+                        } else {
+                            document.exitFullscreen();
+                        }
+                    });
+                }
+            }, 0);
+
+            return el;
         }
     };
 
@@ -522,6 +763,28 @@ static const char DASH_JS[] PROGMEM = R"rawliteral(
             var label = document.getElementById('status-label-' + w.id);
             if (dot && data.level) dot.className = 'status-indicator ' + data.level;
             if (label && data.label) label.textContent = data.label;
+        },
+
+        image: function(w, data) {
+            if (data.url !== undefined && data.url !== w.url) {
+                w.url = data.url;
+                var img = document.getElementById('img-' + w.id);
+                var overlay = document.getElementById('overlay-' + w.id);
+                if (img) {
+                    overlay.classList.add('active');
+                    overlay.innerHTML = '<div class="spinner"></div><div class="overlay-title">Loading Image</div>';
+                    img.src = w.url;
+                }
+            }
+        },
+
+        video: function(w, data) {
+            if (data.url !== undefined && data.url !== w.url) {
+                w.url = data.url;
+                if (typeof w._reload === 'function') {
+                    w._reload();
+                }
+            }
         }
     };
 

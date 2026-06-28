@@ -40,14 +40,19 @@
 #include "widgets/DashLED.h"
 #include "widgets/DashText.h"
 #include "widgets/DashStatus.h"
+#include "widgets/DashImage.h"
+#include "widgets/DashVideo.h"
 #include "network/DashWebServer.h"
 #include "network/DashWebSocket.h"
 #include "data/DashJsonEngine.h"
 
-// Re-export enums for convenience
+// Re-export enums and classes for convenience
 using dash::StatusLevel;
 using dash::MapTheme;
 using dash::MarkerStyle;
+using dash::ImageFit;
+using dash::DashImage;
+using dash::DashVideo;
 
 class ESP32Dashboard {
 public:
@@ -226,6 +231,28 @@ public:
      * @return Pointer to the created widget, or nullptr if full.
      */
     dash::DashStatus* addStatus(const char* title);
+
+    // =================================================================
+    // Image Widget
+    // =================================================================
+
+    /**
+     * @brief Add an image widget.
+     * @param title Display title.
+     * @return Pointer to the created widget, or nullptr if full.
+     */
+    dash::DashImage* addImage(const char* title);
+
+    // =================================================================
+    // Video Widget
+    // =================================================================
+
+    /**
+     * @brief Add a video streaming widget.
+     * @param title Display title.
+     * @return Pointer to the created widget, or nullptr if full.
+     */
+    dash::DashVideo* addVideo(const char* title);
 
     // =================================================================
     // Queries

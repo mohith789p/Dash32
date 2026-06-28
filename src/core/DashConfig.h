@@ -49,6 +49,11 @@
 #define DASH_STRING_VALUE_MAX_LEN 64
 #endif
 
+/** Maximum length of a media widget URL (including null terminator). */
+#ifndef DASH_URL_MAX_LEN
+#define DASH_URL_MAX_LEN 256
+#endif
+
 // ---------------------------------------------------------------------------
 // JSON buffers
 // ---------------------------------------------------------------------------

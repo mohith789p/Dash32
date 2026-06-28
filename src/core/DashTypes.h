@@ -26,6 +26,8 @@ enum class WidgetType : uint8_t {
     LED     = 3,
     Text    = 4,
     Status  = 5,
+    Image   = 6,
+    Video   = 7,
     // Reserved for future use
     Chart   = 10,
     Compass = 11

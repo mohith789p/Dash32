@@ -82,6 +82,8 @@ dash::DashLED*    pLedManual     = nullptr;
 
 dash::DashText*   pText          = nullptr;
 dash::DashStatus* pStatus        = nullptr;
+dash::DashImage*  pImage         = nullptr;
+dash::DashVideo*  pVideo         = nullptr;
 
 // --- Timing Trackers ---
 uint32_t lastThemeCycleMs    = 0;
@@ -233,12 +235,38 @@ void setupStatus() {
     }
 }
 
+void setupMedia() {
+    Serial.println("[TEST] Initializing Media widgets...");
+    pImage = dashboard.addImage("Validation Image");
+    pVideo = dashboard.addVideo("Validation Video");
+
+    if (pImage && pVideo) {
+        pImage->setURL("https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=400&q=80");
+        pImage->setFit(ImageFit::Cover);
+        pImage->setRefreshInterval(0);
+        pImage->enableFullscreen(true);
+        pImage->showBorder(true);
+
+        pVideo->setURL("https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4");
+        pVideo->setAspectRatio(16, 9);
+        pVideo->setAutoplay(true);
+        pVideo->setMuted(true);
+        pVideo->showControls(false);
+        pVideo->enableFullscreen(true);
+        pVideo->setReconnectInterval(3000);
+
+        Serial.println("[PASS] Media widgets initialized successfully");
+    } else {
+        Serial.println("[FAIL] Media widget initialization failed!");
+    }
+}
+
 void verifyWidgetLimit() {
     Serial.println("[TEST] Verifying registration limit compliance...");
     
-    // We currently have 15 widgets. DASH_MAX_WIDGETS is 20.
-    // Let's dynamically add 5 cards to reach the limit.
-    for (int i = 0; i < 5; ++i) {
+    // We currently have 17 widgets (15 original + 2 media). DASH_MAX_WIDGETS is 20.
+    // Let's dynamically add 3 cards to reach the limit.
+    for (int i = 0; i < 3; ++i) {
         char name[16];
         snprintf(name, sizeof(name), "Filler Card %d", i);
         auto* filler = dashboard.addCard(name);
@@ -421,6 +449,25 @@ void updateStatus() {
     }
 }
 
+void updateMedia() {
+    static uint32_t lastMediaUpd = 0;
+    if (millis() - lastMediaUpd >= 15000) {
+        lastMediaUpd = millis();
+        static bool toggle = false;
+        toggle = !toggle;
+
+        if (toggle) {
+            pImage->setURL("https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=400&q=80");
+            pVideo->setURL("http://192.168.1.50:81/stream");
+            Serial.println("[PASS] Media URLs toggled to alternative state");
+        } else {
+            pImage->setURL("https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=400&q=80");
+            pVideo->setURL("https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4");
+            Serial.println("[PASS] Media URLs toggled to initial state");
+        }
+    }
+}
+
 // =============================================================================
 // Statistics & Performance Telemetry
 // =============================================================================
@@ -468,13 +515,14 @@ void setup() {
     Serial.println("         ESP32DASHBOARD VALIDATION SUITE         ");
     Serial.println("=================================================");
 
-    // Add widgets (total = 15)
+    // Add widgets (total = 17)
     setupCards();
     setupGauges();
     setupMaps();
     setupLEDs();
     setupText();
     setupStatus();
+    setupMedia();
 
     // Verify compliance with the maximum widget limit (20)
     verifyWidgetLimit();
@@ -507,6 +555,7 @@ void loop() {
     updateLEDs();
     updateText();
     updateStatus();
+    updateMedia();
 
     // 3. Telemetry and statistics print
     printStatistics();

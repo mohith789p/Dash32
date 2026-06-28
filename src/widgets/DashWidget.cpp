@@ -39,6 +39,8 @@ const char* DashWidget::typeName() const {
         case WidgetType::LED:     return "led";
         case WidgetType::Text:    return "text";
         case WidgetType::Status:  return "status";
+        case WidgetType::Image:   return "image";
+        case WidgetType::Video:   return "video";
         case WidgetType::Chart:   return "chart";
         case WidgetType::Compass: return "compass";
         default:                  return "unknown";

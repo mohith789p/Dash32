@@ -216,6 +216,8 @@ The library uses a highly optimized composite structure:
 | **LED** | An ON/OFF status circle with customizable color options. | `bool` | Pointer | Pointer & Manual |
 | **Text** | Displays multiline blocks of text. Supports JSON escaping. | `const char*` | Manual | Manual Only |
 | **Status** | A status pill styled green, orange, red, or blue. | `StatusLevel` (enum), `const char*` | Manual | Manual Only |
+| **Image** | Displays static, local, or base64 images with auto-refresh intervals. | `const char*` | Manual | Manual Only |
+| **Video** | Displays live video streams (MJPEG/HTTP) with auto-reconnection. | `const char*` | Manual | Manual Only |
 
 ---
 
@@ -248,6 +250,8 @@ The library uses a highly optimized composite structure:
 * **`DashLED* addLED(const char* title, bool* state = nullptr)`**
 * **`DashText* addText(const char* title)`**
 * **`DashStatus* addStatus(const char* title)`**
+* **`DashImage* addImage(const char* title)`**
+* **`DashVideo* addVideo(const char* title)`**
 
 #### Manual Modifiers
 * **`bool setCardValue(const char* title, float value)`**
@@ -476,6 +480,26 @@ const char* getLabel() const;
 StatusLevel getLevel() const;
 ```
 
+### DashImage
+```cpp
+void setURL(const char* url);              // Set the image URL (static, base64, or refresh-based)
+void setFit(ImageFit fit);                 // Contain, Cover, Fill, None (Default: ImageFit::Contain)
+void setRefreshInterval(uint32_t ms);      // Set auto-refresh in ms (0 = disabled, Default: 0)
+void enableFullscreen(bool enable);        // Enable fullscreen action button (Default: true)
+void showBorder(bool show);                // Show/hide glassmorphic card borders (Default: true)
+```
+
+### DashVideo
+```cpp
+void setURL(const char* url);              // Set streaming URL (MJPEG / MP4 streams)
+void setAspectRatio(uint8_t w, uint8_t h); // Set player aspect ratio (Default: 16:9)
+void setAutoplay(bool autoplay);           // Auto play on load (Default: true)
+void setMuted(bool muted);                 // Mute audio by default (Default: true)
+void showControls(bool show);              // Show native player controls (Default: false)
+void enableFullscreen(bool enable);        // Enable fullscreen action button (Default: true)
+void setReconnectInterval(uint32_t ms);    // Reconnection interval in ms (Default: 3000)
+```
+
 ---
 
 ## Configuration Overrides
@@ -487,6 +511,7 @@ You can adjust compile-time parameters by `#define`ing constants **before** incl
 #define DASH_UNIT_MAX_LEN 12            // Unit string length (Default: 16)
 #define DASH_TEXT_MAX_LEN 256           // Text widget buffer size (Default: 128)
 #define DASH_STATUS_LABEL_MAX_LEN 32    // Status text buffer size (Default: 48)
+#define DASH_URL_MAX_LEN 512            // Media URL buffer length (Default: 256)
 #define DASH_JSON_BUFFER_SIZE 4096      // Serialization buffer size (Default: 2048)
 #define DASH_MAX_WS_CLIENTS 8           // Max WebSocket connections (Default: 4)
 #define DASH_UPDATE_INTERVAL_MS 50      // Websocket poll interval (Default: 100)
@@ -508,10 +533,12 @@ Find the following examples in the **File** → **Examples** → **ESP32Dashboar
 5. **`TextWidget`**: Demonstrates formatting, Unicode characters, and JSON string escaping on multiline fields.
 6. **`StatusWidget`**: Customizes system status badges using the `StatusLevel` severity indicators.
 7. **`Maps`**: The full GPS mapping suite: trails, rotation, markers, follow modes, and layers.
-8. **`ManualUpdates`**: Shows how to construct an event-driven dashboard without binding variables.
-9. **`PointerBinding`**: Highlights pointer binding to eliminate code overhead in standard routines.
-10. **`MultipleWidgets`**: Demonstrates handling up to 25 widgets and overriding default registration maximums.
-11. **`FullDashboard`**: The flagship library example showing all widgets cooperating on simulated data.
+8. **`ImageWidget`**: Focuses on the Image Widget features: static, refresh-based, and dynamic runtime URLs.
+9. **`VideoWidget`**: Demonstrates live video streams (MJPEG/HTTP) and video playback configurations.
+10. **`ManualUpdates`**: Shows how to construct an event-driven dashboard without binding variables.
+11. **`PointerBinding`**: Highlights pointer binding to eliminate code overhead in standard routines.
+12. **`MultipleWidgets`**: Demonstrates handling up to 25 widgets and overriding default registration maximums.
+13. **`FullDashboard`**: The flagship library example showing all widgets cooperating on simulated data.
 
 ---
 

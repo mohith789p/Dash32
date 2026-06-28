@@ -539,6 +539,158 @@ body {
 }
 
 /* ============================================================
+   Image & Video Widgets
+   ============================================================ */
+.widget-image, .widget-video {
+    grid-column: span 2;
+    padding: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.widget-image .widget-title, .widget-video .widget-title {
+    padding: 16px 20px 8px;
+    margin-bottom: 0;
+}
+
+.image-wrap, .video-wrap {
+    position: relative;
+    width: 100%;
+    background: #060913;
+}
+
+.image-container, .video-container {
+    height: 280px;
+    width: 100%;
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.image-element, .video-element {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.image-fit-contain { object-fit: contain; }
+.image-fit-cover   { object-fit: cover; }
+.image-fit-fill    { object-fit: fill; }
+.image-fit-none    { object-fit: none; }
+
+.widget-no-border {
+    border-color: transparent !important;
+}
+
+/* Media Overlays (Loading & Error/Disconnected States) */
+.media-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(10, 14, 26, 0.9);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    color: var(--text-secondary);
+    z-index: 10;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--transition-base);
+    text-align: center;
+    padding: 20px;
+}
+
+.media-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.media-overlay .spinner {
+    width: 36px;
+    height: 36px;
+    border: 3px solid rgba(99, 102, 241, 0.1);
+    border-radius: 50%;
+    border-top-color: var(--accent-primary);
+    animation: spin 1s linear infinite;
+}
+
+.media-overlay .overlay-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.media-overlay .overlay-desc {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.media-overlay svg {
+    color: var(--status-error);
+}
+
+/* Media Controls (Fullscreen button) */
+.media-controls {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    display: flex;
+    gap: 4px;
+    z-index: 20;
+}
+
+.media-btn {
+    width: 30px;
+    height: 30px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: var(--radius-sm);
+    background: rgba(10, 14, 26, 0.6);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition-fast);
+}
+
+.media-btn:hover {
+    background: rgba(99, 102, 241, 0.2);
+    border-color: var(--accent-primary);
+    color: var(--text-primary);
+}
+
+/* Fullscreen support */
+.image-wrap:fullscreen, .image-wrap:-webkit-full-screen,
+.video-wrap:fullscreen, .video-wrap:-webkit-full-screen {
+    background: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.image-wrap:fullscreen .image-container, .image-wrap:-webkit-full-screen .image-container,
+.video-wrap:fullscreen .video-container, .video-wrap:-webkit-full-screen .video-container {
+    height: 100vh;
+    width: 100vw;
+    border-radius: 0;
+}
+
+.image-wrap:fullscreen .media-btn, .image-wrap:-webkit-full-screen .media-btn,
+.video-wrap:fullscreen .media-btn, .video-wrap:-webkit-full-screen .media-btn {
+    background: rgba(0, 0, 0, 0.5);
+}
+
+/* ============================================================
    System Info Panel & Toggle Button
    ============================================================ */
 .sys-info-btn {
