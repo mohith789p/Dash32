@@ -10,7 +10,44 @@
 #include "core/DashDebug.h"
 
 #include <WiFi.h>
+#include <ESPmDNS.h>
 #include <cstring>
+#include <cctype>
+
+// Helper to sanitize hostname
+static void sanitizeHostname(const char* input, char* output, size_t maxLen) {
+    if (!input || maxLen == 0) {
+        if (maxLen > 0) output[0] = '\0';
+        return;
+    }
+
+    // Trim leading
+    const char* start = input;
+    while (*start && std::isspace((unsigned char)*start)) {
+        start++;
+    }
+
+    // Trim trailing
+    const char* end = start + strlen(start);
+    while (end > start && std::isspace((unsigned char)*(end - 1))) {
+        end--;
+    }
+
+    // Copy, replacing internal spaces with '-' and limiting length
+    size_t outIdx = 0;
+    // RFC 1035 limits label to 63 chars
+    size_t limit = (maxLen - 1 < 63) ? (maxLen - 1) : 63;
+
+    for (const char* p = start; p < end && outIdx < limit; p++) {
+        char c = *p;
+        if (std::isspace((unsigned char)c)) {
+            output[outIdx++] = '-';
+        } else {
+            output[outIdx++] = c;
+        }
+    }
+    output[outIdx] = '\0';
+}
 
 // ---------------------------------------------------------------------------
 // Static member
@@ -57,6 +94,11 @@ ESP32Dashboard::~ESP32Dashboard() {
 
 bool ESP32Dashboard::begin(const char* ssid, const char* password,
                            uint16_t httpPort, uint16_t wsPort) {
+    return begin(ssid, password, "dash32", httpPort, wsPort);
+}
+
+bool ESP32Dashboard::begin(const char* ssid, const char* password, const char* hostname,
+                           uint16_t httpPort, uint16_t wsPort) {
     if (_started) {
         DASH_LOG_WARN("Dashboard already started");
         return true;
@@ -99,6 +141,20 @@ bool ESP32Dashboard::begin(const char* ssid, const char* password,
              ip[0], ip[1], ip[2], ip[3]);
 
     DASH_LOG("WiFi connected! IP: %s", _ipStr);
+
+    // Initialize mDNS
+    char sanitized[64];
+    sanitizeHostname(hostname, sanitized, sizeof(sanitized));
+    if (strlen(sanitized) == 0) {
+        strncpy(sanitized, "dash32", sizeof(sanitized));
+        sanitized[sizeof(sanitized) - 1] = '\0';
+    }
+    if (!MDNS.begin(sanitized)) {
+        DASH_LOG_ERROR("Failed to start mDNS!");
+    } else {
+        MDNS.addService("http", "tcp", httpPort);
+        DASH_LOG("mDNS responder started with hostname: %s", sanitized);
+    }
 
     // Start HTTP server
     _httpServer.begin(httpPort);

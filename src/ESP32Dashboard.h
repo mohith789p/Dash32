@@ -76,6 +76,10 @@ public:
                uint16_t httpPort = DASH_HTTP_PORT,
                uint16_t wsPort = DASH_WS_PORT);
 
+    bool begin(const char* ssid, const char* password, const char* hostname,
+               uint16_t httpPort = DASH_HTTP_PORT,
+               uint16_t wsPort = DASH_WS_PORT);
+
     /**
      * @brief Main loop function — call this in your loop().
      *
