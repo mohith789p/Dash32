@@ -11,19 +11,19 @@ namespace dash {
 
 DashGauge::DashGauge(const char* title, const char* unit)
     : DashWidget(title, unit, WidgetType::Gauge)
-    , _min(0.0f)
-    , _max(100.0f)
+    , _rangeMin(0.0f)
+    , _rangeMax(100.0f)
 {
 }
 
 void DashGauge::setRange(float min, float max) {
     if (min >= max) {
         DASH_LOG_WARN("Gauge '%s': min >= max, swapping", _title);
-        _min = max;
-        _max = min;
+        _rangeMin = max;
+        _rangeMax = min;
     } else {
-        _min = min;
-        _max = max;
+        _rangeMin = min;
+        _rangeMax = max;
     }
     markDirty();
 }
@@ -55,7 +55,7 @@ int DashGauge::serializeFull(char* buf, size_t size) const {
     int pos = snprintf(buf, size,
         "{\"id\":%u,\"type\":\"gauge\",\"title\":\"%s\",\"unit\":\"%s\","
         "\"min\":%.2f,\"max\":%.2f,",
-        _id, _title, _unit, _min, _max);
+        _id, _title, _unit, _rangeMin, _rangeMax);
 
     if (pos < 0 || static_cast<size_t>(pos) >= size) return -1;
 

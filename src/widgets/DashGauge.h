@@ -50,8 +50,8 @@ public:
     void setValue(long val)   { _value.set(val); markDirty(); }
 
     // ----- Accessors -----
-    float getMin() const { return _min; }
-    float getMax() const { return _max; }
+    float getMin() const { return _rangeMin; }
+    float getMax() const { return _rangeMax; }
 
     // ----- DashWidget interface -----
     bool checkForChange() override;
@@ -64,8 +64,8 @@ public:
 
 private:
     ValueHolder _value;
-    float       _min;
-    float       _max;
+    float       _rangeMin;
+    float       _rangeMax;
 };
 
 } // namespace dash
